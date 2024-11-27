@@ -11,14 +11,15 @@
         <link rel="stylesheet" href="/css/carousel.css">
         <script src="/js/carousel.js"></script>
 		<script src="/js/main.js"></script>
+        <script type="module" src="https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js"></script>
     </head>
     <body>
-        <!-- <div id="first-screen">
-            <div id="first-screen-content-bg">
-                <div id="first-screen-content">
-                </div>
+        <div id="fullscreen">
+            <div id="window">
+                <div id="close" onclick="closeWindow()">✕</div>
+                <div id="content"></div>
             </div>
-        </div> -->
+        </div>
         <div id="main">
             <div id="logo">
                 <video autoplay loop muted src="assets/logo_1kbps.mp4"></video>
@@ -82,7 +83,7 @@
             <div class="x-section-title"><div class="x-gradient-font">Editing <span style="font-size: 40px; font-weight:600;">|</span> Local Manipulation</div></div>
 
 
-            <div class="x-section-title"><div class="x-gradient-font">Citation</div></div>
+            <!-- <div class="x-section-title"><div class="x-gradient-font">Citation</div></div>
             <p class="bibtex x-gradient-block">
 @inproceedings{xiang2023ivid,
     title     = {3D-aware Image Generation using 2D Diffusion Models},
@@ -92,7 +93,7 @@
     year      = {2023},
     pages     = {2383-2393}
 }
-            </p>
+            </p> -->
         </div>
         <div id="bottombar">
             <div><span>T<span style="font-size: 10px;">RELLIS</span>:</span> Structured 3D Latents for Scalable and Versatile 3D Generation</div>

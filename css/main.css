@@ -1,3 +1,20 @@
+/* Costomize Slider */
+.slider-navigation-next {
+    margin-top: -32px !important;
+    color: white !important;
+    background: #6567C9 !important;
+}
+
+.slider-navigation-previous {
+    margin-top: -32px !important;
+    color: white !important;
+    background: #6567C9 !important;
+}
+
+.slider-page {
+    color: white !important;
+    background: #6567C9 !important;
+}
 
 * {
     font-family: 'Avenir', 'Avenir Next Cyr', 'Config', 'Microsoft YaHei';
@@ -21,10 +38,10 @@ body {
 
 p {
     position: relative;
-    margin: 16px 100px;
+    margin: 16px;
     color: black;
     font-size: 16px;
-    font-weight: 400;
+    font-weight: 500;
     text-align: justify;
 }
 
@@ -32,15 +49,136 @@ p span {
     font-weight: 600;
 }
 
+video {
+    width: 100%;
+    height: auto;
+}
+
+.x-horizontal-flex {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+.x-vertical-flex {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    flex-wrap: wrap;
+}
+
+.x-gradient-font {
+    background: linear-gradient(107.54deg, #0078d4 .39%, #8661c5 51.23%, #ff9349 100%);
+    background-clip: text;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.x-gradient-block {
+    color: #3f3f3f;
+    background: linear-gradient(107.54deg, #0078d41f .39%, #8661c51f 51.23%, #ff93491f 100%);
+    border-radius: 16px;
+}
+
+.x-gradient-border {
+    position: relative;
+    padding: 1px;
+    margin: 3px;
+    border: 3px;
+    background: white;
+    background-clip: padding-box;
+    border: solid border transparent;
+    border-radius: 16px;
+}
+
+.x-gradient-border::before {
+    content: '';
+    position: absolute;
+    top: 0; right: 0; bottom: 0; left: 0;
+    z-index: -1;
+    margin: -3px;
+    border-radius: 16px;
+    background: linear-gradient(107.54deg, #0078d4 .39%, #8661c5 51.23%, #ff9349 100%);
+}
+
+.x-section-title {
+    margin: 64px 0px 16px 0px;
+    padding-left: 16px;
+    color: black;
+    font-size: 32px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: left;
+}
+
+.x-note {
+    margin: 16px 32px;
+    color: gray;
+    font-size: 16px;
+    font-weight: 500;
+    text-align: center;
+}
+
+.x-card {
+    margin: 8px;
+    padding: 16px;
+    border-radius: 16px;
+    box-shadow: 0px 0px 6px rgba(0, 0, 0, 0.25);
+}
+
+.x-card:hover {
+    box-shadow: 0px 0px 8px rgba(0, 0, 0, 0.5);
+}
+
+.x-card .caption {
+    margin: 8px 0px;
+    height: 100px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.x-handwriting {
+    font-family: 'Segoe Print';
+    font-size: 14px;
+    font-weight: 600;
+    color: black;
+    text-align: center;
+}
+
+#first-screen {
+    width: 100vw;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: url('/assets/teaser_1.png') no-repeat center center fixed;
+    background-size: cover;
+}
+
+#first-screen-content-bg {
+    width: 100vw;
+    background: #ffffff;
+}
+
+#first-screen-content {
+    max-width: 1000px;
+    margin: 0px auto;
+    padding: 32px 0px;
+    background: #ffffff;
+}
+
 #main {
     max-width: 1000px;
-    /* width: 1000px; */
     margin: 0px auto;
     padding-top: 150px;
     padding-bottom: 200px;
 }
 
-#teaser {
+#logo {
     width: 70%;
     min-width: 350px;
     margin: 0px auto;
@@ -52,11 +190,6 @@ p span {
     color: gray;
 }
 
-#teaser video {
-    width: 100%;
-    height: auto;
-}
-
 #title {
     margin-bottom: 32px;
     color: black;
@@ -64,10 +197,6 @@ p span {
     font-weight: 700;
     /* white-space: nowrap; */
     text-align: center;
-    background: linear-gradient(107.54deg, #0078d4 .39%, #8661c5 51.23%, #ff9349 100%);
-    background-clip: text;
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
 }
 
 #authors {
@@ -103,13 +232,7 @@ p span {
     margin: 0px 16px;
 }
 
-.note {
-    margin: 16px 32px;
-    color: gray;
-    font-size: 16px;
-    font-weight: 500;
-    text-align: center;
-}
+
 
 #conference {
     margin: 16px 32px;
@@ -130,7 +253,6 @@ p span {
     font-size: 16px;
     font-weight: 500;
     text-align: justify;
-    background-color: rgba(255, 255, 255, 0.9);
     border-radius: 16px;
 }
 
@@ -140,20 +262,9 @@ p span {
     margin-right: 8px;
 }
 
-#abstract::after {
-    content: "";
-    position: absolute;
-    top: 0px;
-    left: 0px;
-    width: 100%;
-    height: 100%;
-    background: linear-gradient(107.54deg, #0078d4 .39%, #8661c5 51.23%, #ff9349 100%);
-    border-radius: 16px;
-    z-index: -1;
-}
 
 #links {
-    margin: 32px;
+    margin: 32px 0px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -237,16 +348,38 @@ p span {
     content: "\e003";
 }
 
-.section {
-    margin: 64px 0px 16px 0px;
-    color: black;
-    font-size: 32px;
-    font-weight: 300;
+#teaser {
     display: flex;
     align-items: center;
     justify-content: center;
-    white-space: nowrap;
+    flex-wrap: wrap;
 }
+
+/* #teaser::after {
+    content: "";
+    position: absolute;
+    top: 0px;
+    left: calc(50% - 50vw);
+    width: 100vw;
+    height: 100%;
+    background: gray;
+    opacity: 0.5;
+    z-index: -1;
+} */
+
+#teaser .label div {
+    height: 100%;
+    width: 100%;
+    font-size: 36px;
+    font-weight: 700;
+    line-height: 150%;
+    text-align: center;
+}
+
+#teaser div {
+    height: 100%;
+}
+
 
 /* .section::before {
     content: "";
@@ -265,7 +398,7 @@ p span {
     height: 32px;
     background-color: rgb(32, 163, 196);
 } */
-
+/* 
 .figure {
     margin: 16px;
     display: flex;
@@ -279,17 +412,15 @@ p span {
     color: black;
     font-size: 16px;
     font-weight: 400;
-}
+} */
 
 .bibtex {
     margin: 32px 96px;
     padding: 0px 24px;
-    color: black;
     font-family: consolas, monospace;
     white-space: pre;
     font-size: 14px;
     font-weight: 400;
-    background-color: rgb(240, 242, 245);
     display: flex;
     align-items: center;
     justify-content: center;

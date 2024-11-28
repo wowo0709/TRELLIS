@@ -55,6 +55,7 @@ video {
 }
 
 .x-row {
+    width: 100%;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -62,11 +63,83 @@ video {
 }
 
 .x-column {
+    height: 100%;
     display: flex;
     align-items: center;
     justify-content: center;
     flex-wrap: nowrap;
     flex-direction: column;
+}
+
+.x-left-align {
+    display: flex;
+    align-items: center;
+    justify-content: left;
+    flex-wrap: nowrap;
+}
+
+.x-right-align {
+    display: flex;
+    align-items: center;
+    justify-content: right;
+    flex-wrap: nowrap;
+}
+
+.x-flex-spacer {
+    flex: 1;
+}
+
+.x-labels {
+    position: absolute;
+    top: 8px;
+    right: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: left;
+    flex-direction: row-reverse;
+}
+
+.x-label {
+    height: 20px;
+    padding: 0px 6px;
+    margin: 0px 2px;
+    color: white;
+    font-size: 12px;
+    font-weight: 600;
+    background: #6567C9;
+    border-radius: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.x-button {
+    height: 40px;
+    padding: 0px 14px;
+    background: #6567C9;
+    color: white;
+    border-radius: 50px;
+    box-shadow: 0px 0px 4px rgba(0, 0, 0, 0.25);
+    font-size: 16px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.x-button.small {
+    height: 32px;
+    padding: 0px 12px;
+    border-radius: 50px;
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.x-button:hover {
+    transform: scale(1.05);
+    box-shadow: 0px 0px 8px rgba(0, 0, 0, 0.5);
 }
 
 .x-gradient-font {
@@ -114,6 +187,13 @@ video {
     justify-content: left;
 }
 
+.x-section-title.small {
+    margin: 8px 0px 4px 0px;
+    padding-left: 4px;
+    font-size: 20px;
+    font-weight: 700;
+}
+
 .x-note {
     margin: 16px 32px;
     color: gray;
@@ -123,111 +203,59 @@ video {
 }
 
 .x-card {
+    position: relative;
     margin: 8px;
     padding: 16px;
     border-radius: 16px;
     box-shadow: 0px 0px 6px rgba(0, 0, 0, 0.25);
+    transition: all 0.2s ease;
 }
 
-.x-card:hover {
+.x-card.clickable {
+    cursor: pointer;
+}
+
+.x-card.clickable:hover {
     box-shadow: 0px 0px 8px rgba(0, 0, 0, 0.5);
+    transform: scale(1.02);
 }
 
 .x-card .caption {
     margin: 8px 0px;
-    height: 100px;
+    height: 80px;
     display: flex;
-    align-items: center;
+    align-items: start;
     justify-content: center;
 }
 
 .x-handwriting {
+    width: 100%;
     font-family: 'Segoe Print';
-    font-size: 14px;
+    font-size: 12px;
     font-weight: 600;
+    line-height: 1.5;
     color: black;
-    text-align: center;
+    text-align: justify;
 }
 
-#fullscreen {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100vw;
-    height: 100vh;
-    background: transparent;
-    display: none;
-    align-items: center;
-    justify-content: center;
-    z-index: 1000;
-    user-select: none;
-    backdrop-filter: blur(10px);
-    opacity: 0;
-    transition: opacity 0.5s ease;
-}
-
-#fullscreen #window {
-    position: relative;
-    min-width: 25vw;
-    min-height: 25vh;
-    background: linear-gradient(107.54deg, #e6eff7 .39%, #eeebf5 51.23%, #fcf4ee 100%);
-    border-radius: 32px;
-    box-shadow: 0px 0px 16px rgba(0, 0, 0, 0.5);
-    padding: 16px;
-}
-
-#fullscreen #window #close {
-    position: absolute;
-    top: 0px;
-    right: -40px;
-    width: 32px;
-    height: 32px;
-    color: black;
-    font-size: 16px;
-    font-weight: 700;
-    background: #fcf4ee;
-    border-radius: 16px;
+.x-image-prompt {
+    height: calc(100% - 2px);
+    aspect-ratio: 1/1;
     display: flex;
     align-items: center;
     justify-content: center;
-    cursor: pointer;
-    box-shadow: 0px 0px 8px rgba(0, 0, 0, 0.5);
-    transition: all 0.2s ease;
+    border: 1px solid black;
 }
 
-#fullscreen #window #close:hover {
-    color: white;
-    background: red;
-}
-
-#fullscreen #window #content {
-    width: 100%;
-}
-
-.modelviewer-container {
-    width: 500px;
-    height: 500px;
-    border-radius: 16px;
-    background: white;
-    box-shadow: inset 0px 0px 8px rgba(0, 0, 0, 0.25);
-    overflow: hidden;
-}
-
-.modelviewer-container model-viewer {
-    width: 100%;
-    height: 100%;
-}
-
-.modelviewer-panel {
-    width: 250px;
-    height: 100%;
-    margin-left: 16px;
+.x-image-prompt img {
+    max-width: 100%;
+    max-height: 100%;
 }
 
 #main {
     max-width: 1000px;
     margin: 0px auto;
-    padding-top: 150px;
+    padding-top: 100px;
     padding-bottom: 200px;
 }
 
@@ -383,22 +411,32 @@ video {
 
 #links #paper::before {
     content: "\e000";
+    font-size: 18px;
 }
 
 #links #arxiv::before {
     content: "\e001";
+    font-size: 20px;
 }
 
 #links #code::before {
     content: "\e002";
+    font-size: 20px;
 }
 
 #links #poster::before {
     content: "\e004";
+    font-size: 20px;
 }
 
 #links #video::before {
     content: "\e003";
+    font-size: 20px;
+}
+
+#links #demo::before {
+    content: "\e005";
+    font-size: 20px;
 }
 
 #teaser {

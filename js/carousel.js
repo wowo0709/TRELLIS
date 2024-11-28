@@ -1,12 +1,15 @@
 var carousel_objects = {};
 
 
-function make_carousel(carousel_id, item_template, items, num_to_display) {
+function make_carousel(carousel_id, item_template, item_callback, items, rows_to_display, cols_to_display) {
     carousel_objects[carousel_id] = {};
     carousel_objects[carousel_id].item_template = item_template;
+    carousel_objects[carousel_id].item_callback = item_callback;
     carousel_objects[carousel_id].items = items;
-    carousel_objects[carousel_id].num_to_display = num_to_display;
-    carousel_objects[carousel_id].num_pages = Math.ceil(items.length / num_to_display);
+    carousel_objects[carousel_id].rows_to_display = rows_to_display;
+    carousel_objects[carousel_id].cols_to_display = cols_to_display;
+    carousel_objects[carousel_id].num_to_display = rows_to_display * cols_to_display;
+    carousel_objects[carousel_id].num_pages = Math.ceil(items.length / carousel_objects[carousel_id].num_to_display);
     carousel_objects[carousel_id].current_page = 0;
     carousel_init(carousel_id);
 }
@@ -16,11 +19,9 @@ function carousel_init(carousel_id) {
     let carousel = document.getElementById(carousel_id);
     let html = "";
     html += '<div class="x-carousel-slider">'
+
     for (let i = 0; i < carousel_objects[carousel_id].num_to_display; i++) {
-        html += '<div class="x-carousel-slider-item">';
-        if (i < carousel_objects[carousel_id].items.length)
-            html += carousel_objects[carousel_id].item_template(carousel_objects[carousel_id].items[i]);
-        html += '</div>';
+        html += '<div class="x-carousel-slider-item" style="min-width: ' + (100 / carousel_objects[carousel_id].cols_to_display) + '%;"></div>';
     }
     html += '</div>';
     html += '<div class="x-carousel-nav">';
@@ -33,6 +34,7 @@ function carousel_init(carousel_id) {
     html += `<div class="x-carousel-switch" onclick="carousel_next('${carousel_id}')">\u25B6</div>`;
     html += '</div>';
     carousel.innerHTML = html;
+    carousel_render(carousel_id);
 }
 
 
@@ -40,17 +42,21 @@ function carousel_render(carousel_id) {
     let carousel = document.getElementById(carousel_id);
     let slider = carousel.querySelector('.x-carousel-slider');
     num_to_display = carousel_objects[carousel_id].num_to_display;
-    start_idx = carousel_objects[carousel_id].current_page * num_to_display;
+    let current_page = carousel_objects[carousel_id].current_page;
+    start_idx = current_page * num_to_display;
     for (let i = 0; i < num_to_display; i++) {
         let item_idx = start_idx + i;
         let item = slider.children[i];
+        let info = { item_idx: item_idx, page_idx: current_page, display_idx: i };
         if (item_idx < carousel_objects[carousel_id].items.length) {
-            item.innerHTML = carousel_objects[carousel_id].item_template(carousel_objects[carousel_id].items[item_idx]);
+            item.innerHTML = carousel_objects[carousel_id].item_template(carousel_objects[carousel_id].items[item_idx], info);
         } else {
             item.innerHTML = "";
         }
+        if (carousel_objects[carousel_id].item_callback) {
+            carousel_objects[carousel_id].item_callback(item, info);
+        }
     }
-    carousel.querySelector('.x-carousel-slider').innerHTML = html;
 }
 
 

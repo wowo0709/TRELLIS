@@ -135,7 +135,7 @@
             }
         },
         {
-            "name": "Paper_machine",
+            "name": "Paper Machine",
             "file": "paper_machine.npy",
             "transform": {
                 "location": {

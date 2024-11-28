@@ -122,52 +122,18 @@ function img2_carousel_item_template(item) {
 
 
 function txt2_window_template(item) {
-    function txt2_panel_template(item) {
-        return `
-            <div class="x-section-title small"><div class="x-gradient-font">Prompt</div></div>
-            <div class="modelviewer-panel-prompt">
-                <div class="x-handwriting">
-                    ${item.prompt}
-                </div>
-            </div>
-            <div class="x-section-title small"><div class="x-gradient-font">Display Mode</div></div>
-            <div class="x-left-align">
-                <div id="appearance-button" class="modelviewer-panel-button small checked" onclick="showTexture()">Appearance</div>
-                <div id="geometry-button" class="modelviewer-panel-button small" onclick="hideTexture()">Geometry</div>
-            </div>
-            <div class="x-flex-spacer"></div>
-            <div class="x-row">
-                <div id="download-button" class="modelviewer-panel-button checked" onclick="window.open('${item.model}')">Download GLB</div>
-            </div>
-        `;
-    }
+    let prompt = `<div class="x-handwriting">${item.prompt}</div>`;
+    let panel = asset_panel_template(prompt);
     item = JSON.parse(JSON.stringify(item));
     item.model = '/assets/txt2/glbs/' + item.model
-    return modelviewer_window_template(item, txt2_panel_template);
+    return modelviewer_window_template(item, panel);
 }
 
 
 function img2_window_template(item) {
-    function img2_panel_template(item) {
-        return `
-            <div class="x-section-title small"><div class="x-gradient-font">Prompt</div></div>
-            <div class="modelviewer-panel-prompt">
-                <div class="x-image-prompt">
-                    <img src="/assets/img2/images/${item.prompt}">
-                </div>
-            </div>
-            <div class="x-section-title small"><div class="x-gradient-font">Display Mode</div></div>
-            <div class="x-left-align">
-                <div id="appearance-button" class="modelviewer-panel-button small checked" onclick="showTexture()">Appearance</div>
-                <div id="geometry-button" class="modelviewer-panel-button small" onclick="hideTexture()">Geometry</div>
-            </div>
-            <div class="x-flex-spacer"></div>
-            <div class="x-row">
-                <div id="download-button" class="modelviewer-panel-button checked" onclick="window.open('${item.model}')">Download GLB</div>
-            </div>
-        `;
-    }
+    let prompt = `<div class="x-image-prompt"><img src="/assets/img2/images/${item.prompt}"></div>`;
+    let panel = asset_panel_template(prompt);
     item = JSON.parse(JSON.stringify(item));
     item.model = '/assets/img2/glbs/' + item.model
-    return modelviewer_window_template(item, img2_panel_template);
+    return modelviewer_window_template(item, panel);
 }

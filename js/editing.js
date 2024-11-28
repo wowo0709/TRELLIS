@@ -124,7 +124,7 @@ function variants_window_template(item) {
             </div>
             <div class="x-flex-spacer"></div>
             <div class="x-row">
-                <div id="download-button" class="modelviewer-panel-button checked" onclick="window.open('${item.model}')">Download GLB</div>
+                <div id="download-button" class="modelviewer-panel-button enabled" onclick="downloadGLB()">Download GLB</div>
             </div>
         `;
     }

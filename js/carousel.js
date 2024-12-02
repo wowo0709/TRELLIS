@@ -1,10 +1,9 @@
 var carousel_objects = {};
 
 
-function make_carousel(carousel_id, item_template, item_callback, items, rows_to_display, cols_to_display) {
+function make_carousel(carousel_id, item_template, items, rows_to_display, cols_to_display) {
     carousel_objects[carousel_id] = {};
     carousel_objects[carousel_id].item_template = item_template;
-    carousel_objects[carousel_id].item_callback = item_callback;
     carousel_objects[carousel_id].items = items;
     carousel_objects[carousel_id].rows_to_display = rows_to_display;
     carousel_objects[carousel_id].cols_to_display = cols_to_display;
@@ -21,7 +20,7 @@ function carousel_init(carousel_id) {
     html += '<div class="x-carousel-slider">'
 
     for (let i = 0; i < carousel_objects[carousel_id].num_to_display; i++) {
-        html += '<div class="x-carousel-slider-item" style="min-width: ' + (100 / carousel_objects[carousel_id].cols_to_display) + '%;"></div>';
+        html += `<div class="x-carousel-slider-item" style="flex-basis: calc(100% / ${carousel_objects[carousel_id].cols_to_display});"></div>`;
     }
     html += '</div>';
     html += '<div class="x-carousel-nav">';
@@ -52,9 +51,6 @@ function carousel_render(carousel_id) {
             item.innerHTML = carousel_objects[carousel_id].item_template(carousel_objects[carousel_id].items[item_idx], info);
         } else {
             item.innerHTML = "";
-        }
-        if (carousel_objects[carousel_id].item_callback) {
-            carousel_objects[carousel_id].item_callback(item, info);
         }
     }
 }

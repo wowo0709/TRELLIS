@@ -87,10 +87,9 @@ var img2_items = [
 
 
 function txt2_carousel_item_template(item) {
-    return `<div class="x-card clickable" onclick=\'openWindow(txt2_window_template(${JSON.stringify(item)}))\'>
+    return `<div class="x-card clickable" style="min-width: 120px" onclick=\'openWindow(txt2_window_template(${JSON.stringify(item)}))\'>
                 <div class="x-labels">
                     <div class="x-label">GLB ✓</div>
-                    <div class="x-label">${item.source}</div>
                 </div>
                 <div style="width: 100%; aspect-ratio: 1">
                     <video autoplay loop muted height="100%" src="/assets/txt2/videos/${item.video}"></video>
@@ -104,7 +103,7 @@ function txt2_carousel_item_template(item) {
 }
 
 function img2_carousel_item_template(item) {
-    return `<div class="x-card clickable" onclick=\'openWindow(img2_window_template(${JSON.stringify(item)}))\'>
+    return `<div class="x-card clickable" style="min-width: 120px" onclick=\'openWindow(img2_window_template(${JSON.stringify(item)}))\'>
                 <div class="x-labels">
                     <div class="x-label">GLB ✓</div>
                     <div class="x-label">${item.source}</div>

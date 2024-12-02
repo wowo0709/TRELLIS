@@ -1,5 +1,16 @@
 var fullscreenElement = null;
 
+
+function preventDefault(e) {
+    e.preventDefault();
+}
+
+
+function stopPropagation(e) {
+    e.stopPropagation();
+}
+
+
 function initWindow() {
     fullscreenElement = document.createElement('div');
     fullscreenElement.id = 'fullscreen';
@@ -10,13 +21,10 @@ function initWindow() {
         </div>
     `;
     document.body.appendChild(fullscreenElement);
-    fullscreenElement.addEventListener('touchmove', function(e) {
-        e.preventDefault();
-    });
-    fullscreenElement.addEventListener('wheel', function(e) {
-        e.preventDefault();
-    });
+    fullscreenElement.addEventListener('wheel', preventDefault);
+    fullscreenElement.addEventListener('touchmove', preventDefault);
 }
+
 
 function openWindow(content) {
     let contentElement = fullscreenElement.querySelector('#content');
@@ -25,22 +33,31 @@ function openWindow(content) {
     setTimeout(() => {
         fullscreenElement.style.opacity = 1;
     }, 100);
+    
+    // if copntent height is greater than window height, enable scroll
+    let contentHeight = contentElement.clientHeight;
+    let innerHeight = contentElement.children[0].clientHeight;
+    if (innerHeight > contentHeight) {
+        contentElement.addEventListener('wheel', stopPropagation);
+        contentElement.addEventListener('touchmove', stopPropagation);
+    }
+    else {
+        contentElement.removeEventListener('wheel', stopPropagation);
+        contentElement.removeEventListener('touchmove', stopPropagation);
+    }
 }
 
 
 function closeWindow() {
+    window_state = {};
     fullscreenElement.style.opacity = 0;
     setTimeout(() => {
         fullscreenElement.style.display = 'none';
-    }, 500);
+    }, 250);
 }
 
 
-var modelviewer_state = {
-    textures: null,
-    exposure: 5,
-    assets: null,
-}
+var window_state = {};
 
 
 function hideTexture() {
@@ -50,11 +67,11 @@ function hideTexture() {
     geometryButton.classList.add('checked');
     let modelViewer = document.getElementById('modelviewer');
     if (modelViewer.model.materials[0].pbrMetallicRoughness.baseColorTexture.texture === null) return;
-    modelviewer_state.textures = [];
+    window_state.textures = [];
     for (let i = 0; i < modelViewer.model.materials.length; i++) {
-        modelviewer_state.textures.push(modelViewer.model.materials[i].pbrMetallicRoughness.baseColorTexture.texture);
+        window_state.textures.push(modelViewer.model.materials[i].pbrMetallicRoughness.baseColorTexture.texture);
     }
-    modelviewer_state.exposure = modelViewer.exposure;
+    window_state.exposure = modelViewer.exposure;
     modelViewer.environmentImage = '/assets/env_maps/gradient.jpg';
     for (let i = 0; i < modelViewer.model.materials.length; i++) {
         modelViewer.model.materials[i].pbrMetallicRoughness.baseColorTexture.setTexture(null);
@@ -72,9 +89,9 @@ function showTexture() {
     if (modelViewer.model.materials[0].pbrMetallicRoughness.baseColorTexture.texture !== null) return;
     modelViewer.environmentImage = '/assets/env_maps/white.jpg';
     for (let i = 0; i < modelViewer.model.materials.length; i++) {
-        modelViewer.model.materials[i].pbrMetallicRoughness.baseColorTexture.setTexture(modelviewer_state.textures[i]);
+        modelViewer.model.materials[i].pbrMetallicRoughness.baseColorTexture.setTexture(window_state.textures[i]);
     }
-    modelViewer.exposure = modelviewer_state.exposure;
+    modelViewer.exposure = window_state.exposure;
 }
 
 
@@ -120,7 +137,7 @@ function lookAtAsset(index) {
     let assetList = document.getElementById('asset-list');
     let hasChecked = assetList.children[index].classList.contains('checked');
     if (hasChecked) {
-        for (let i = 0; i < modelviewer_state.assets.length; i++) {
+        for (let i = 0; i < window_state.assets.length; i++) {
             assetList.children[i].classList.remove('checked');
         }
         modelViewer.cameraTarget = 'none';
@@ -129,7 +146,7 @@ function lookAtAsset(index) {
         viewAssetButton.onclick = null;
     }
     else {
-        for (let i = 0; i < modelviewer_state.assets.length; i++) {
+        for (let i = 0; i < window_state.assets.length; i++) {
             if (i === index) {
                 assetList.children[i].classList.add('checked');
             }
@@ -137,7 +154,7 @@ function lookAtAsset(index) {
                 assetList.children[i].classList.remove('checked');
             }
         }
-        modelViewer.cameraTarget = modelviewer_state.assets[index].position.map(p => p + 'm').join(' ');
+        modelViewer.cameraTarget = window_state.assets[index].position.map(p => p + 'm').join(' ');
         viewAssetButton.classList.remove('disabled');
         viewAssetButton.classList.add('enabled');
         viewAssetButton.onclick = () => viewAsset(index);
@@ -156,16 +173,16 @@ function viewAsset(index) {
     document.getElementById('scene-mode-desc').style.display = 'none';
     document.getElementById('asset-mode-desc').style.display = 'block';
     document.getElementById('prompt-group').style.display = 'block';
-    document.querySelector('.modelviewer-panel-prompt').innerHTML = modelviewer_state.assets[index].prompt;
+    document.querySelector('.modelviewer-panel-prompt').innerHTML = window_state.prompt_template(window_state.assets[index]);
     document.getElementById('annotations-group').style.display = 'none';
 
-    if (!modelviewer_state.scene_src) {
-        modelviewer_state.scene_src = modelViewer.src;
+    if (!window_state.scene_src) {
+        window_state.scene_src = modelViewer.src;
     }
     modelViewer.cameraTarget = 'none';
-    modelViewer.src = modelviewer_state.assets[index].model;
+    modelViewer.src = window_state.assets[index].model;
 
-    for (let i = 0; i < modelviewer_state.assets.length; i++) {
+    for (let i = 0; i < window_state.assets.length; i++) {
         if (i === index) {
             assetList.children[i].classList.add('checked');
         }
@@ -181,6 +198,8 @@ function viewAsset(index) {
 
 
 function backToScene() {
+    showTexture();
+
     let modelViewer = document.getElementById('modelviewer');
     let viewAssetButton = document.getElementById('view-asset-button');
     let assetList = document.getElementById('asset-list');
@@ -191,15 +210,17 @@ function backToScene() {
     document.getElementById('annotations-group').style.display = 'block';
 
     modelViewer.cameraTarget = 'none';
-    modelViewer.src = modelviewer_state.scene_src;
-    modelviewer_state.scene_src = null;
+    modelViewer.src = window_state.scene_src;
+    window_state.scene_src = null;
 
-    for (let i = 0; i < modelviewer_state.assets.length; i++) {
+    for (let i = 0; i < window_state.assets.length; i++) {
         assetList.children[i].classList.remove('checked');
         assetList.children[i].onclick = () => lookAtAsset(i);
     }
 
     viewAssetButton.innerHTML = 'View Asset';
+    viewAssetButton.classList.remove('enabled');
+    viewAssetButton.classList.add('disabled');
     viewAssetButton.onclick = null;
 }
 
@@ -276,28 +297,27 @@ function modelviewer_window_template(item, panel, config) {
     let viewer_size = config && config.viewer_size || 500;
     let panel_size = config && config.panel_size || 300;
     let show_annotations = config && config.show_annotations || false;
-    html = `<div class="x-row" style="align-items: stretch;">
-                <div class="x-column">
-                    <div class="modelviewer-container" style="width: ${viewer_size}px; height: ${viewer_size}px;">
-                        <model-viewer
-                            id="modelviewer"
-                            src="${item.model}"
-                            camera-controls
-                            tone-mapping="natural"
-                            shadow-intensity="1"
-                            environment-image="/assets/env_maps/white.jpg"
-                            exposure="${item.exposure || 5}"
-                            >`
+    html = `<div class="x-row" style="align-items: stretch; flex-wrap: wrap; width: ${viewer_size + panel_size + 32}px; max-width: calc(100vw - 32px);">
+                <div class="modelviewer-container" style="width: ${viewer_size}px;">
+                    <model-viewer
+                        id="modelviewer"
+                        src="${item.model}"
+                        camera-controls
+                        tone-mapping="natural"
+                        shadow-intensity="1"
+                        environment-image="/assets/env_maps/white.jpg"
+                        exposure="${item.exposure || 5}"
+                        >`
     if (show_annotations) {
-        modelviewer_state.assets = item.assets;
+        window_state.assets = item.assets;
+        window_state.prompt_template = item.prompt_template;
         for (let i = 0; i < item.assets.length; i++) {
             html += `<button slot="hotspot-${i}" data-position="${item.assets[i].position.join(' ')}">${item.assets[i].name}</button>`;
         }
     }
-    html += `           </model-viewer>
-                    </div>
+    html += `        </model-viewer>
                 </div>
-                <div class="modelviewer-panel" style="width: ${panel_size}px;">
+                <div class="modelviewer-panel" style="flex: 1 1 ${panel_size}px;">
                     ${panel}
                 </div>
             </div>`;

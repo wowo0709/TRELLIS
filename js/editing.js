@@ -84,15 +84,35 @@ var variants_items = [
 ];
 
 
+var manipulation_items = [
+    {
+        steps: [
+            { video: "mech_0.mp4", label: "Input", prompt: "Battle mech with a humanoid shape.", prompt_type: "text" },
+            { video: "mech_1.mp4", label: "Remove Arms", prompt: "Battle mech with a humanoid shape, no arms.", prompt_type: "text" },
+            { video: "mech_2.mp4", label: "Add Weapons", prompt: "Battle mech with huge beam weapons.", prompt_type: "text" },
+            { video: "mech_3.mp4", label: "Replace Legs", prompt: "Battle mech with tracked chassis.", prompt_type: "text" },
+        ]
+    },
+    {
+        steps: [
+            { video: "island_0.mp4", label: "Input", prompt: "Floating island with trees and a house.", prompt_type: "text" },
+            { video: "island_1.mp4", label: "Replace House", prompt: "Floating island with trees and open space.", prompt_type: "text" },
+            { video: "island_2.mp4", label: "Add River", prompt: "Floating island with trees, river and waterfall.", prompt_type: "text" },
+            { video: "island_3.mp4", label: "Add Bridge", prompt: "<img src='/assets/local_editing/images/island_3.png' style='max-width: 80%; max-height: 100%;'>", prompt_type: "raw" },
+        ]
+    },
+];
+
+
 function variants_carousel_item_template(item) {
     html = `<div class="x-card">
                 <div class="x-labels">
                 </div>
-                <div class="x-row">`
+                <div class="x-row" style="flex-wrap: wrap;">`
     for (let i in item.selected) {
         let selected = item.selected[i];
         let variant = item.variants[selected];
-        html += `<div style="margin: 0 16px; flex: 1 0 0;">
+        html += `<div style="margin: 0 16px; flex: 1 0 120px">
                     <div class="x-column">
                         <div style="width: 100%; aspect-ratio: 1; overflow: hidden; border-radius: 8px;">
                             <video autoplay loop muted height="100%" src="/assets/variants/videos/${variant.video}"></video>
@@ -108,27 +128,27 @@ function variants_carousel_item_template(item) {
 }
 
 
-function variants_window_template(item) {
-    function txt2_panel_template(item) {
-        return `
-            <div class="x-section-title small"><div class="x-gradient-font">Prompt</div></div>
-            <div class="modelviewer-panel-prompt">
-                <div class="x-handwriting">
-                    ${item.prompt}
+function manipulation_carousel_item_template(item) {
+    html = `<div class="x-card">
+                <div class="x-labels">
                 </div>
-            </div>
-            <div class="x-section-title small"><div class="x-gradient-font">Display Mode</div></div>
-            <div class="x-left-align">
-                <div id="appearance-button" class="modelviewer-panel-button small checked" onclick="showTexture()">Appearance</div>
-                <div id="geometry-button" class="modelviewer-panel-button small" onclick="hideTexture()">Geometry</div>
-            </div>
-            <div class="x-flex-spacer"></div>
-            <div class="x-row">
-                <div id="download-button" class="modelviewer-panel-button enabled" onclick="downloadGLB()">Download GLB</div>
-            </div>
-        `;
+                <div class="x-row" style="flex-wrap: wrap;">`
+    for (let i in item.steps) {
+        let step = item.steps[i];
+        html += `<div style="margin: 0 16px; flex: 1 0 120px; position: relative;">
+                    <div class="x-labels">
+                        <div class="x-label">${step.label}</div>
+                    </div>
+                    <div class="x-column">
+                        <div style="width: 100%; aspect-ratio: 1; overflow: hidden; border-radius: 8px;">
+                            <video autoplay loop muted height="100%" src="/assets/local_editing/videos/${step.video}"></video>
+                        </div>
+                        <div class="caption">
+                            ${step.prompt_type === "text" ? `<div class="x-handwriting">${step.prompt}</div>` : step.prompt}
+                        </div>
+                    </div>
+                </div>`;
     }
-    item = JSON.parse(JSON.stringify(item));
-    item.model = '/assets/txt2/glbs/' + item.model
-    return modelviewer_window_template(item, txt2_panel_template);
+    html += `</div></div>`;
+    return html;
 }

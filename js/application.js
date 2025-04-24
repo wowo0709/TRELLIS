@@ -217,7 +217,7 @@ var scene_items = [
 
 
 function scene_selection_panel_thumbnail_template(item) {
-    return `<img src="/assets/scenes/${item.thumbnail}" alt="${item.alt}" style="height: 100px;">`;
+    return `<img src="assets/scenes/${item.thumbnail}" alt="${item.alt}" style="height: 100px;">`;
 }
 
 
@@ -229,14 +229,14 @@ function scene_selection_panel_item_template(item) {
                     <div class="x-button" onclick=\'openWindow(scene_window_template(${JSON.stringify(item)}))\'>View GLB</div>
                 </div>
                 <div style="width: 100%; aspect-ratio: 16/9">
-                    <video controls muted height="100%" src="/assets/scenes/${item.video}" poster="/assets/scenes/${item.poster}"></video>
+                    <video controls muted height="100%" src="assets/scenes/${item.video}" poster="assets/scenes/${item.poster}"></video>
                 </div>
             </div>`;
 }
 
 function scene_asset_prompt_template(asset) {
     if (asset.promtp_type === "image")
-        return `<div class="x-image-prompt"><img src="/assets/scenes/${asset.prompt}" alt="${asset.alt}"></div>`;
+        return `<div class="x-image-prompt"><img src="assets/scenes/${asset.prompt}" alt="${asset.alt}"></div>`;
     else 
         return `<div class="x-handwriting">${asset.prompt}</div>`;
 }
@@ -244,9 +244,9 @@ function scene_asset_prompt_template(asset) {
 function scene_window_template(item) {
     let panel = scene_panel_template(item);
     item = JSON.parse(JSON.stringify(item));
-    item.model = '/assets/scenes/' + item.model
+    item.model = 'assets/scenes/' + item.model
     for (let asset of item.assets) {
-        asset.model = '/assets/scenes/' + asset.model;
+        asset.model = 'assets/scenes/' + asset.model;
     }
     item.prompt_template = scene_asset_prompt_template
     return modelviewer_window_template(item, panel, {viewer_size: 600, panel_size: 550, show_annotations: true});

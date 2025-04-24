@@ -72,7 +72,7 @@ function hideTexture() {
         window_state.textures.push(modelViewer.model.materials[i].pbrMetallicRoughness.baseColorTexture.texture);
     }
     window_state.exposure = modelViewer.exposure;
-    modelViewer.environmentImage = '/assets/env_maps/gradient.jpg';
+    modelViewer.environmentImage = 'assets/env_maps/gradient.jpg';
     for (let i = 0; i < modelViewer.model.materials.length; i++) {
         modelViewer.model.materials[i].pbrMetallicRoughness.baseColorTexture.setTexture(null);
     }
@@ -87,7 +87,7 @@ function showTexture() {
     geometryButton.classList.remove('checked');
     let modelViewer = document.getElementById('modelviewer');
     if (modelViewer.model.materials[0].pbrMetallicRoughness.baseColorTexture.texture !== null) return;
-    modelViewer.environmentImage = '/assets/env_maps/white.jpg';
+    modelViewer.environmentImage = 'assets/env_maps/white.jpg';
     for (let i = 0; i < modelViewer.model.materials.length; i++) {
         modelViewer.model.materials[i].pbrMetallicRoughness.baseColorTexture.setTexture(window_state.textures[i]);
     }
@@ -305,7 +305,7 @@ function modelviewer_window_template(item, panel, config) {
                         camera-controls
                         tone-mapping="natural"
                         shadow-intensity="1"
-                        environment-image="/assets/env_maps/white.jpg"
+                        environment-image="assets/env_maps/white.jpg"
                         exposure="${item.exposure || 5}"
                         >`
     if (show_annotations) {

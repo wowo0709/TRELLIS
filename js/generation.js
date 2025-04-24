@@ -92,7 +92,7 @@ function txt2_carousel_item_template(item) {
                     <div class="x-label">GLB ✓</div>
                 </div>
                 <div style="width: 100%; aspect-ratio: 1">
-                    <video autoplay playsinline loop muted height="100%" src="/assets/txt2/videos/${item.video}"></video>
+                    <video autoplay playsinline loop muted height="100%" src="assets/txt2/videos/${item.video}"></video>
                 </div>
                 <div class="caption">
                     <div class="x-handwriting">
@@ -109,11 +109,11 @@ function img2_carousel_item_template(item) {
                     <div class="x-label">${item.source}</div>
                 </div>
                 <div style="width: 100%; aspect-ratio: 1">
-                    <video autoplay playsinline loop muted height="100%" src="/assets/img2/videos/${item.video}"></video>
+                    <video autoplay playsinline loop muted height="100%" src="assets/img2/videos/${item.video}"></video>
                 </div>
                 <div class="caption">
                     <div class="x-image-prompt">
-                        <img src="/assets/img2/images/${item.prompt}" alt="${item.alt}">
+                        <img src="assets/img2/images/${item.prompt}" alt="${item.alt}">
                     </div>
                 </div>
             </div>`;
@@ -124,15 +124,15 @@ function txt2_window_template(item) {
     let prompt = `<div class="x-handwriting">${item.prompt}</div>`;
     let panel = asset_panel_template(prompt);
     item = JSON.parse(JSON.stringify(item));
-    item.model = '/assets/txt2/glbs/' + item.model
+    item.model = 'assets/txt2/glbs/' + item.model
     return modelviewer_window_template(item, panel);
 }
 
 
 function img2_window_template(item) {
-    let prompt = `<div class="x-image-prompt"><img src="/assets/img2/images/${item.prompt}" alt="${item.alt}"></div>`;
+    let prompt = `<div class="x-image-prompt"><img src="assets/img2/images/${item.prompt}" alt="${item.alt}"></div>`;
     let panel = asset_panel_template(prompt);
     item = JSON.parse(JSON.stringify(item));
-    item.model = '/assets/img2/glbs/' + item.model
+    item.model = 'assets/img2/glbs/' + item.model
     return modelviewer_window_template(item, panel);
 }

@@ -98,7 +98,7 @@ var manipulation_items = [
             { video: "island_0.mp4", label: "Input", prompt: "Floating island with trees and a house.", prompt_type: "text" },
             { video: "island_1.mp4", label: "Replace House", prompt: "Floating island with trees and open space.", prompt_type: "text" },
             { video: "island_2.mp4", label: "Add River", prompt: "Floating island with trees, river and waterfall.", prompt_type: "text" },
-            { video: "island_3.mp4", label: "Add Bridge", prompt: "<img src='/assets/local_editing/images/island_3.png' alt='Adding a bridge' style='max-width: 80%; max-height: 100%;'>", prompt_type: "raw" },
+            { video: "island_3.mp4", label: "Add Bridge", prompt: "<img src='assets/local_editing/images/island_3.png' alt='Adding a bridge' style='max-width: 80%; max-height: 100%;'>", prompt_type: "raw" },
         ]
     },
 ];
@@ -115,7 +115,7 @@ function variants_carousel_item_template(item) {
         html += `<div style="margin: 0 16px; flex: 1 0 120px">
                     <div class="x-column">
                         <div style="width: 100%; aspect-ratio: 1; overflow: hidden; border-radius: 8px;">
-                            <video autoplay playsinline loop muted height="100%" src="/assets/variants/videos/${variant.video}"></video>
+                            <video autoplay playsinline loop muted height="100%" src="assets/variants/videos/${variant.video}"></video>
                         </div>
                         <div class="caption">
                             ${variant.prompt? `<div class="x-handwriting">${variant.prompt}</div>` : variant.desc}
@@ -141,7 +141,7 @@ function manipulation_carousel_item_template(item) {
                     </div>
                     <div class="x-column">
                         <div style="width: 100%; aspect-ratio: 1; overflow: hidden; border-radius: 8px;">
-                            <video autoplay playsinline loop muted height="100%" src="/assets/local_editing/videos/${step.video}"></video>
+                            <video autoplay playsinline loop muted height="100%" src="assets/local_editing/videos/${step.video}"></video>
                         </div>
                         <div class="caption">
                             ${step.prompt_type === "text" ? `<div class="x-handwriting">${step.prompt}</div>` : step.prompt}

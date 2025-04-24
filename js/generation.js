@@ -35,54 +35,54 @@ var txt2_items = [
 
 
 var img2_items = [
-    { video: "trellis.mp4", prompt: "trellis.png", model: "trellis.glb", source: "DALL-E 3" },
-    { video: "paper_machine.mp4", prompt: "paper_machine.png", model: "paper_machine.glb", source: "DALL-E 3" },
-    { video: "ship.mp4", prompt: "ship.png", model: "ship.glb", source: "DALL-E 3" },
-    { video: "food_cart.mp4", prompt: "food_cart.png", model: "food_cart.glb", source: "DALL-E 3" },
-    { video: "loong.mp4", prompt: "loong.png", model: "loong.glb", source: "DALL-E 3" },
-    { video: "mech.mp4", prompt: "mech.png", model: "mech.glb", source: "DALL-E 3" },
-    { video: "castle.mp4", prompt: "castle.png", model: "castle.glb", source: "DALL-E 3" },
-    { video: "toolbox.mp4", prompt: "toolbox.png", model: "toolbox.glb", source: "DALL-E 3" },
-    { video: "rack.mp4", prompt: "rack.png", model: "rack.glb", source: "DALL-E 3" },
-    { video: "robot_police.mp4", prompt: "robot_police.png", model: "robot_police.glb", source: "DALL-E 3" },
-    { video: "robot_crab.mp4", prompt: "robot_crab.png", model: "robot_crab.glb", source: "DALL-E 3" },
-    { video: "cart.mp4", prompt: "cart.png", model: "cart.glb", source: "DALL-E 3" },
-    { video: "colorful_cottage.mp4", prompt: "colorful_cottage.png", model: "colorful_cottage.glb", source: "DALL-E 3" },
-    { video: "house.mp4", prompt: "house.png", model: "house.glb", source: "DALL-E 3" },
-    { video: "space_colony.mp4", prompt: "space_colony.png", model: "space_colony.glb", source: "DALL-E 3" },
-    { video: "space_station.mp4", prompt: "space_station.png", model: "space_station.glb", source: "DALL-E 3" },
-    { video: "temple.mp4", prompt: "temple.png", model: "temple.glb", source: "DALL-E 3" },
-    { video: "mushroom.mp4", prompt: "mushroom.png", model: "mushroom.glb", source: "DALL-E 3" },
-    { video: "maya.mp4", prompt: "maya.png", model: "maya.glb", source: "DALL-E 3" },
-    { video: "monkey_astronaut.mp4", prompt: "monkey_astronaut.png", model: "monkey_astronaut.glb", source: "DALL-E 3" },
-    { video: "goblin.mp4", prompt: "goblin.png", model: "goblin.glb", source: "DALL-E 3" },
-    { video: "dragonborn.mp4", prompt: "dragonborn.png", model: "dragonborn.glb", source: "DALL-E 3" },
-    { video: "anima_girl.mp4", prompt: "anima_girl.png", model: "anima_girl.glb", source: "DALL-E 3" },
-    { video: "gate.mp4", prompt: "gate.png", model: "gate.glb", source: "DALL-E 3" },
-    { video: "biplane.mp4", prompt: "biplane.png", model: "biplane.glb", source: "DALL-E 3" },
-    { video: "elephant.mp4", prompt: "elephant.png", model: "elephant.glb", source: "DALL-E 3" },
-    { video: "furry.mp4", prompt: "furry.png", model: "furry.glb", source: "DALL-E 3" },
-    { video: "workbench.mp4", prompt: "workbench.png", model: "workbench.glb", source: "DALL-E 3" },
-    { video: "bulldozer.mp4", prompt: "bulldozer.png", model: "bulldozer.glb", source: "DALL-E 3" },
-    { video: "castle2.mp4", prompt: "castle2.png", model: "castle2.glb", source: "DALL-E 3" },
-    { video: "chest.mp4", prompt: "chest.png", model: "chest.glb", source: "DALL-E 3" },
-    { video: "excavator.mp4", prompt: "excavator.png", model: "excavator.glb", source: "DALL-E 3" },
-    { video: "monster.mp4", prompt: "monster.png", model: "monster.glb", source: "DALL-E 3" },
-    { video: "pickup.mp4", prompt: "pickup.png", model: "pickup.glb", source: "SA-1B" },
-    { video: "plant.mp4", prompt: "plant.png", model: "plant.glb", source: "SA-1B" },
-    { video: "pumpkin.mp4", prompt: "pumpkin.png", model: "pumpkin.glb", source: "SA-1B" },
-    { video: "crab_claw.mp4", prompt: "crab_claw.png", model: "crab_claw.glb", source: "SA-1B" },
-    { video: "umbrella.mp4", prompt: "umbrella.png", model: "umbrella.glb", source: "SA-1B" },
-    { video: "bench.mp4", prompt: "bench.png", model: "bench.glb", source: "SA-1B" },
-    { video: "statue.mp4", prompt: "statue.png", model: "statue.glb", source: "SA-1B" },
-    { video: "trunk.mp4", prompt: "trunk.png", model: "trunk.glb", source: "SA-1B" },
-    { video: "ceramic_elephant.mp4", prompt: "ceramic_elephant.png", model: "ceramic_elephant.glb", source: "SA-1B" },
-    { video: "light.mp4", prompt: "light.png", model: "light.glb", source: "SA-1B" },
-    { video: "microphone.mp4", prompt: "microphone.png", model: "microphone.glb", source: "SA-1B" },
-    { video: "sofa.mp4", prompt: "sofa.png", model: "sofa.glb", source: "SA-1B" },
-    { video: "sofa_cat.mp4", prompt: "sofa_cat.png", model: "sofa_cat.glb", source: "SA-1B" },
-    { video: "bomb.mp4", prompt: "bomb.png", model: "bomb.glb", source: "SA-1B" },
-    { video: "car.mp4", prompt: "car.png", model: "car.glb", source: "SA-1B" },
+    { video: "trellis.mp4", prompt: "trellis.png", model: "trellis.glb", source: "DALL-E 3", alt: "A detailed trellis structure" },
+    { video: "paper_machine.mp4", prompt: "paper_machine.png", model: "paper_machine.glb", source: "DALL-E 3", alt: "A machine for processing paper" },
+    { video: "ship.mp4", prompt: "ship.png", model: "ship.glb", source: "DALL-E 3", alt: "A large sailing ship" },
+    { video: "food_cart.mp4", prompt: "food_cart.png", model: "food_cart.glb", source: "DALL-E 3", alt: "A food cart on a busy street" },
+    { video: "loong.mp4", prompt: "loong.png", model: "loong.glb", source: "DALL-E 3", alt: "A mythical Chinese dragon" },
+    { video: "mech.mp4", prompt: "mech.png", model: "mech.glb", source: "DALL-E 3", alt: "A futuristic robot mech" },
+    { video: "castle.mp4", prompt: "castle.png", model: "castle.glb", source: "DALL-E 3", alt: "A medieval castle with high towers" },
+    { video: "toolbox.mp4", prompt: "toolbox.png", model: "toolbox.glb", source: "DALL-E 3", alt: "A toolbox filled with tools" },
+    { video: "rack.mp4", prompt: "rack.png", model: "rack.glb", source: "DALL-E 3", alt: "A kitchen storage rack" },
+    { video: "robot_police.mp4", prompt: "robot_police.png", model: "robot_police.glb", source: "DALL-E 3", alt: "A police robot" },
+    { video: "robot_crab.mp4", prompt: "robot_crab.png", model: "robot_crab.glb", source: "DALL-E 3", alt: "A robotic crab with mechanical limbs" },
+    { video: "cart.mp4", prompt: "cart.png", model: "cart.glb", source: "DALL-E 3", alt: "A horse cart with wheels" },
+    { video: "colorful_cottage.mp4", prompt: "colorful_cottage.png", model: "colorful_cottage.glb", source: "DALL-E 3", alt: "A vibrant, colorful cottage" },
+    { video: "house.mp4", prompt: "house.png", model: "house.glb", source: "DALL-E 3", alt: "A cartoon house" },
+    { video: "space_colony.mp4", prompt: "space_colony.png", model: "space_colony.glb", source: "DALL-E 3", alt: "A futuristic space colony on another planet" },
+    { video: "space_station.mp4", prompt: "space_station.png", model: "space_station.glb", source: "DALL-E 3", alt: "A space station" },
+    { video: "temple.mp4", prompt: "temple.png", model: "temple.glb", source: "DALL-E 3", alt: "A grand temple with ancient architecture" },
+    { video: "mushroom.mp4", prompt: "mushroom.png", model: "mushroom.glb", source: "DALL-E 3", alt: "A giant mushroom house" },
+    { video: "maya.mp4", prompt: "maya.png", model: "maya.glb", source: "DALL-E 3", alt: "A scene inspired by ancient Maya civilization" },
+    { video: "monkey_astronaut.mp4", prompt: "monkey_astronaut.png", model: "monkey_astronaut.glb", source: "DALL-E 3", alt: "A monkey in a space suit" },
+    { video: "goblin.mp4", prompt: "goblin.png", model: "goblin.glb", source: "DALL-E 3", alt: "A mischievous goblin with pointy ears" },
+    { video: "dragonborn.mp4", prompt: "dragonborn.png", model: "dragonborn.glb", source: "DALL-E 3", alt: "A humanoid dragonborn character" },
+    { video: "anima_girl.mp4", prompt: "anima_girl.png", model: "anima_girl.glb", source: "DALL-E 3", alt: "A girl from an anime series" },
+    { video: "gate.mp4", prompt: "gate.png", model: "gate.glb", source: "DALL-E 3", alt: "A grand ornamental gate" },
+    { video: "biplane.mp4", prompt: "biplane.png", model: "biplane.glb", source: "DALL-E 3", alt: "A vintage biplane" },
+    { video: "elephant.mp4", prompt: "elephant.png", model: "elephant.glb", source: "DALL-E 3", alt: "A large elephant with a seat" },
+    { video: "furry.mp4", prompt: "furry.png", model: "furry.glb", source: "DALL-E 3", alt: "A furry creature" },
+    { video: "workbench.mp4", prompt: "workbench.png", model: "workbench.glb", source: "DALL-E 3", alt: "A wooden workbench with tools" },
+    { video: "bulldozer.mp4", prompt: "bulldozer.png", model: "bulldozer.glb", source: "DALL-E 3", alt: "A bulldozer on a construction site" },
+    { video: "castle2.mp4", prompt: "castle2.png", model: "castle2.glb", source: "DALL-E 3", alt: "A large, fortified castle with high walls" },
+    { video: "chest.mp4", prompt: "chest.png", model: "chest.glb", source: "DALL-E 3", alt: "An ornate treasure chest" },
+    { video: "excavator.mp4", prompt: "excavator.png", model: "excavator.glb", source: "DALL-E 3", alt: "A large excavator used in mining" },
+    { video: "monster.mp4", prompt: "monster.png", model: "monster.glb", source: "DALL-E 3", alt: "A giant, terrifying monster" },
+    { video: "pickup.mp4", prompt: "pickup.png", model: "pickup.glb", source: "SA-1B", alt: "A rugged pickup truck" },
+    { video: "plant.mp4", prompt: "plant.png", model: "plant.glb", source: "SA-1B", alt: "A green potted plant" },
+    { video: "pumpkin.mp4", prompt: "pumpkin.png", model: "pumpkin.glb", source: "SA-1B", alt: "A large pumpkin ready for Halloween" },
+    { video: "crab_claw.mp4", prompt: "crab_claw.png", model: "crab_claw.glb", source: "SA-1B", alt: "A large crab claw" },
+    { video: "umbrella.mp4", prompt: "umbrella.png", model: "umbrella.glb", source: "SA-1B", alt: "A bright umbrella for rainy days" },
+    { video: "bench.mp4", prompt: "bench.png", model: "bench.glb", source: "SA-1B", alt: "A simple wooden bench" },
+    { video: "statue.mp4", prompt: "statue.png", model: "statue.glb", source: "SA-1B", alt: "An stone statue" },
+    { video: "trunk.mp4", prompt: "trunk.png", model: "trunk.glb", source: "SA-1B", alt: "A large truck" },
+    { video: "ceramic_elephant.mp4", prompt: "ceramic_elephant.png", model: "ceramic_elephant.glb", source: "SA-1B", alt: "A delicate ceramic elephant sculpture" },
+    { video: "light.mp4", prompt: "light.png", model: "light.glb", source: "SA-1B", alt: "A vintage light fixture" },
+    { video: "microphone.mp4", prompt: "microphone.png", model: "microphone.glb", source: "SA-1B", alt: "A professional microphone" },
+    { video: "sofa.mp4", prompt: "sofa.png", model: "sofa.glb", source: "SA-1B", alt: "A comfortable sofa in a living room" },
+    { video: "sofa_cat.mp4", prompt: "sofa_cat.png", model: "sofa_cat.glb", source: "SA-1B", alt: "A cat lounging on a sofa" },
+    { video: "bomb.mp4", prompt: "bomb.png", model: "bomb.glb", source: "SA-1B", alt: "A granade" },
+    { video: "car.mp4", prompt: "car.png", model: "car.glb", source: "SA-1B", alt: "A red car" }
 ];
 
 
@@ -113,7 +113,7 @@ function img2_carousel_item_template(item) {
                 </div>
                 <div class="caption">
                     <div class="x-image-prompt">
-                        <img src="/assets/img2/images/${item.prompt}">
+                        <img src="/assets/img2/images/${item.prompt}" alt="${item.alt}">
                     </div>
                 </div>
             </div>`;
@@ -130,7 +130,7 @@ function txt2_window_template(item) {
 
 
 function img2_window_template(item) {
-    let prompt = `<div class="x-image-prompt"><img src="/assets/img2/images/${item.prompt}"></div>`;
+    let prompt = `<div class="x-image-prompt"><img src="/assets/img2/images/${item.prompt}" alt="${item.alt}"></div>`;
     let panel = asset_panel_template(prompt);
     item = JSON.parse(JSON.stringify(item));
     item.model = '/assets/img2/glbs/' + item.model

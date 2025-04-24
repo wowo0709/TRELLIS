@@ -199,7 +199,7 @@ video {
 }
 
 .x-note {
-    color: gray;
+    color: rgb(63, 63, 63);
     font-size: 16px;
     font-weight: 500;
 }
@@ -522,10 +522,19 @@ video {
 #bottombar {
     position: absolute;
     bottom: 0px;
-    height: 50px;
+    height: 60px;
+    width: 100%;
+    background: linear-gradient(107.54deg, #0078d4 .39%, #8661c5 51.23%, #ff9349 100%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: space-around;
+    user-select: none;
+}
+
+#bottombar .row {
     width: 80%;
     padding: 0px 10%;
-    background: linear-gradient(107.54deg, #0078d4 .39%, #8661c5 51.23%, #ff9349 100%);
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -536,6 +545,17 @@ video {
     color: rgba(255, 255, 255, 0.7);
     font-size: 12px;
     font-weight: 500;
+}
+
+#bottombar div a {
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 12px;
+    font-weight: 500;
+}
+
+#bottombar div a:hover {
+    color: rgba(255, 255, 255, 1);
+    font-size: 12px;
 }
 
 #bottombar div span {

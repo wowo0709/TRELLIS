@@ -98,7 +98,7 @@ var manipulation_items = [
             { video: "island_0.mp4", label: "Input", prompt: "Floating island with trees and a house.", prompt_type: "text" },
             { video: "island_1.mp4", label: "Replace House", prompt: "Floating island with trees and open space.", prompt_type: "text" },
             { video: "island_2.mp4", label: "Add River", prompt: "Floating island with trees, river and waterfall.", prompt_type: "text" },
-            { video: "island_3.mp4", label: "Add Bridge", prompt: "<img src='/assets/local_editing/images/island_3.png' style='max-width: 80%; max-height: 100%;'>", prompt_type: "raw" },
+            { video: "island_3.mp4", label: "Add Bridge", prompt: "<img src='/assets/local_editing/images/island_3.png' alt='Adding a bridge' style='max-width: 80%; max-height: 100%;'>", prompt_type: "raw" },
         ]
     },
 ];

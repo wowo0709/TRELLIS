@@ -68,21 +68,6 @@ var img2_items = [
     { video: "chest.mp4", prompt: "chest.png", model: "chest.glb", source: "DALL-E 3", alt: "An ornate treasure chest" },
     { video: "excavator.mp4", prompt: "excavator.png", model: "excavator.glb", source: "DALL-E 3", alt: "A large excavator used in mining" },
     { video: "monster.mp4", prompt: "monster.png", model: "monster.glb", source: "DALL-E 3", alt: "A giant, terrifying monster" },
-    { video: "pickup.mp4", prompt: "pickup.png", model: "pickup.glb", source: "SA-1B", alt: "A rugged pickup truck" },
-    { video: "plant.mp4", prompt: "plant.png", model: "plant.glb", source: "SA-1B", alt: "A green potted plant" },
-    { video: "pumpkin.mp4", prompt: "pumpkin.png", model: "pumpkin.glb", source: "SA-1B", alt: "A large pumpkin ready for Halloween" },
-    { video: "crab_claw.mp4", prompt: "crab_claw.png", model: "crab_claw.glb", source: "SA-1B", alt: "A large crab claw" },
-    { video: "umbrella.mp4", prompt: "umbrella.png", model: "umbrella.glb", source: "SA-1B", alt: "A bright umbrella for rainy days" },
-    { video: "bench.mp4", prompt: "bench.png", model: "bench.glb", source: "SA-1B", alt: "A simple wooden bench" },
-    { video: "statue.mp4", prompt: "statue.png", model: "statue.glb", source: "SA-1B", alt: "An stone statue" },
-    { video: "trunk.mp4", prompt: "trunk.png", model: "trunk.glb", source: "SA-1B", alt: "A large truck" },
-    { video: "ceramic_elephant.mp4", prompt: "ceramic_elephant.png", model: "ceramic_elephant.glb", source: "SA-1B", alt: "A delicate ceramic elephant sculpture" },
-    { video: "light.mp4", prompt: "light.png", model: "light.glb", source: "SA-1B", alt: "A vintage light fixture" },
-    { video: "microphone.mp4", prompt: "microphone.png", model: "microphone.glb", source: "SA-1B", alt: "A professional microphone" },
-    { video: "sofa.mp4", prompt: "sofa.png", model: "sofa.glb", source: "SA-1B", alt: "A comfortable sofa in a living room" },
-    { video: "sofa_cat.mp4", prompt: "sofa_cat.png", model: "sofa_cat.glb", source: "SA-1B", alt: "A cat lounging on a sofa" },
-    { video: "bomb.mp4", prompt: "bomb.png", model: "bomb.glb", source: "SA-1B", alt: "A granade" },
-    { video: "car.mp4", prompt: "car.png", model: "car.glb", source: "SA-1B", alt: "A red car" }
 ];
 
 
@@ -106,7 +91,6 @@ function img2_carousel_item_template(item) {
     return `<div class="x-card clickable" style="min-width: 120px" onclick=\'openWindow(img2_window_template(${JSON.stringify(item)}))\'>
                 <div class="x-labels">
                     <div class="x-label">GLB ✓</div>
-                    <div class="x-label">${item.source}</div>
                 </div>
                 <div style="width: 100%; aspect-ratio: 1">
                     <video autoplay playsinline loop muted height="100%" src="assets/img2/videos/${item.video}"></video>

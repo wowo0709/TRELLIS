@@ -67,7 +67,7 @@ def main(local_rank, cfg):
     setup_rng(rank)
 
     # Load data
-    dataset = getattr(datasets, cfg.dataset.name)(cfg.data_dir, **cfg.dataset.args)
+    dataset = getattr(datasets, cfg.dataset.name)(cfg.data_dir, cfg.dataset.type, cfg.dataset.category, **cfg.dataset.args)
 
     # Build model
     model_dict = {

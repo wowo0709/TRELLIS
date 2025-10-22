@@ -1,4 +1,5 @@
 from abc import abstractmethod
+import math
 import os
 import time
 import json
@@ -14,6 +15,28 @@ from torch.utils.tensorboard import SummaryWriter
 from .utils import *
 from ..utils.general_utils import *
 from ..utils.data_utils import recursive_to_device, cycle, ResumableSampler
+
+
+
+def _json_safe(x):
+    if isinstance(x, torch.Tensor):
+        if x.numel() == 1:
+            v = x.detach().cpu().item()
+            return None if (isinstance(v, float) and (math.isnan(v) or math.isinf(v))) else v
+        return _json_safe(x.detach().cpu().tolist())
+    if isinstance(x, (np.floating, np.integer, np.bool_)):
+        v = x.item()
+        return None if (isinstance(v, float) and (math.isnan(v) or math.isinf(v))) else v
+    if isinstance(x, np.ndarray):
+        return _json_safe(x.tolist())
+    if isinstance(x, dict):
+        return {k: _json_safe(v) for k, v in x.items()}
+    if isinstance(x, (list, tuple)):
+        return [_json_safe(v) for v in x]
+    if isinstance(x, float) and (math.isnan(x) or math.isinf(x)):
+        return None
+    return x
+
 
 
 class Trainer:
@@ -405,25 +428,33 @@ class Trainer:
 
                 # Log scale
                 if self.fp16_mode == 'amp':
-                    log[-1][1]['scale'] = self.scaler.get_scale()
+                    log[-1][1]['scale'] = float(self.scaler.get_scale())
                 elif self.fp16_mode == 'inflat_all':
-                    log[-1][1]['log_scale'] = self.log_scale
+                    log[-1][1]['log_scale'] = float(self.log_scale) if not isinstance(self.log_scale, dict) else _json_safe(self.log_scale)
 
                 # Save log
                 if self.step % self.i_log == 0:
                     ## save to log file
+                    entries = log  # don't shadow
                     log_str = '\n'.join([
-                        f'{step}: {json.dumps(log)}' for step, log in log
+                        f'{s}: {json.dumps(_json_safe(content))}'
+                        for s, content in entries
                     ])
                     with open(os.path.join(self.output_dir, 'log.txt'), 'a') as log_file:
                         log_file.write(log_str + '\n')
 
                     # show with mlflow
-                    log_show = [l for _, l in log if not dict_any(l, lambda x: np.isnan(x))]
-                    log_show = dict_reduce(log_show, lambda x: np.mean(x))
+                    log_show = [l for _, l in entries if not dict_any(l, lambda x: np.isnan(x))]
+                    log_show = dict_reduce(log_show, lambda x: float(np.mean(x)))  # ensure python float
                     log_show = dict_flatten(log_show, sep='/')
                     for key, value in log_show.items():
+                        # make sure value is a python scalar
+                        if isinstance(value, (np.generic,)):
+                            value = value.item()
+                        if isinstance(value, torch.Tensor):
+                            value = value.detach().cpu().item() if value.numel() == 1 else float(np.mean(value.detach().cpu().numpy()))
                         self.writer.add_scalar(key, value, self.step)
+
                     log = []
 
                 # Save checkpoint

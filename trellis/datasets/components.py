@@ -68,6 +68,71 @@ class StandardDatasetBase(Dataset):
         return '\n'.join(lines)
 
 
+class CustomStandardDatasetBase(Dataset):
+    """
+    Base class for standard datasets.
+
+    Args:
+        roots (str): paths to the dataset
+    """
+
+    def __init__(self,
+        roots: str,
+        data_type: str,
+        data_category: str,
+    ):
+        super().__init__()
+        self.roots = roots.split(',')
+        self.data_type = data_type
+        self.data_category = data_category
+        self.instances = []
+
+        assert self.data_type in ["shapenet", "gobjaverse", "3dfront"]
+
+        for root in self.roots:
+            if self.data_type == "shapenet":
+                data_root = os.path.join(root, self.data_category)
+                for instanceID in os.listdir(data_root):
+                    self.instances.append((data_root, instanceID))
+            elif self.data_type == "gobjaverse":
+                data_root = os.path.join(root, self.data_category)
+                for sub_category in os.listdir(data_root):
+                    for instanceID in os.listdir(os.path.join(data_root, sub_category)):
+                        self.instances.append((os.path.join(data_root, sub_category), instanceID))
+            elif self.data_type == "3dfront":
+                data_root = root
+                for instanceID in os.listdir(data_root):
+                    self.instances.append((data_root, instanceID))
+    
+    @abstractmethod
+    def get_instance(self, root: str, instance: str) -> Dict[str, Any]:
+        pass
+        
+    def __len__(self):
+        return len(self.instances)
+
+    def __getitem__(self, index) -> Dict[str, Any]:
+        try:
+            root, instance = self.instances[index]
+            return self.get_instance(root, instance)
+        except Exception as e:
+            print(e)
+            return self.__getitem__(np.random.randint(0, len(self)))
+        
+    def __str__(self):
+        lines = []
+        lines.append(self.__class__.__name__)
+        lines.append(f'  - Data Type: {self.data_type}')
+        lines.append(f'  - Data category: {self.data_category}')
+        lines.append(f'  - Total instances: {len(self)}')
+        # lines.append(f'  - Sources:')
+        # for key, stats in self._stats.items():
+        #     lines.append(f'    - {key}:')
+        #     for k, v in stats.items():
+        #         lines.append(f'      - {k}: {v}')
+        return '\n'.join(lines)
+
+
 class TextConditionedMixin:
     def __init__(self, roots, **kwargs):
         super().__init__(roots, **kwargs)

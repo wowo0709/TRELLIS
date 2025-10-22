@@ -27,6 +27,7 @@
         "name": "CustomSparseStructure",
         "type": "shapenet",
         "category": "03001627",
+        "data_path": "/root/node1/data3/shape-generation/shapenetv1/voxelized_pcs_uniform_light",
         "args": {
             "resolution": 64,
             "min_aesthetic_score": 4.5
@@ -66,7 +67,7 @@
             "wandb_config": {
                 "use_wandb": true,
                 "project": "trellis_ss_vae", 
-                "name": "ss_vae_400k_b4x2_shapenet_chair",
+                "name": "ss_vae_300k_b1x8_shapenet_chair",
                 "mode": "online"
             }
         }

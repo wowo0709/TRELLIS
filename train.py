@@ -68,7 +68,12 @@ def main(local_rank, cfg):
     setup_rng(rank)
 
     # Load data
-    dataset = getattr(datasets, cfg.dataset.name)(cfg.data_dir, cfg.dataset.type, cfg.dataset.category, **cfg.dataset.args)
+    dataset = getattr(datasets, cfg.dataset.name)(
+        cfg.dataset.data_path, 
+        cfg.dataset.type, 
+        cfg.dataset.category, 
+        **cfg.dataset.args
+    )
 
     # Build model
     model_dict = {
@@ -104,7 +109,7 @@ if __name__ == '__main__':
     parser.add_argument('--output_dir', type=str, required=True, help='Output directory')
     parser.add_argument('--load_dir', type=str, default='', help='Load directory, default to output_dir')
     parser.add_argument('--ckpt', type=str, default='latest', help='Checkpoint step to resume training, default to latest')
-    parser.add_argument('--data_dir', type=str, default='./data/', help='Data directory')
+    # parser.add_argument('--data_dir', type=str, default='./data/', help='Data directory')
     parser.add_argument('--auto_retry', type=int, default=3, help='Number of retries on error')
     ## dubug
     parser.add_argument('--tryrun', action='store_true', help='Try run without training')

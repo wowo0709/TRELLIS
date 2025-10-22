@@ -82,7 +82,7 @@ class CustomStandardDatasetBase(Dataset):
         data_category: str,
     ):
         super().__init__()
-        self.roots = roots.split(',')
+        self.roots = roots.split(',') if isinstance(roots, str) else roots
         self.data_type = data_type
         self.data_category = data_category
         self.instances = []

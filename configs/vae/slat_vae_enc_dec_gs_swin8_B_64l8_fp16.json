@@ -51,6 +51,10 @@
         "name": "CustomSparseFeat2Render",
         "type": "shapenet",
         "category": "03001627",
+        "data_path": [
+                "/root/node1/data3/shape-generation/shapenetv1/rendered_shapenet_uniform_light", 
+                "/root/node1/data3/shape-generation/shapenetv1/dino_features_uniform_light/dinov2_vitl14_reg"
+            ],
         "args": {
             "image_size": 512,
             "n_views": 24,

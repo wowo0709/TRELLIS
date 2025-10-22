@@ -5,6 +5,7 @@ __attributes = {
     'CustomSparseStructure': 'custom_sparse_structure',
     
     'SparseFeat2Render': 'sparse_feat2render',
+    'CustomSparseFeat2Render': 'custom_sparse_feat2render',
     'SLat2Render':'structured_latent2render',
     'Slat2RenderGeo':'structured_latent2render',
     

@@ -48,21 +48,26 @@
         }
     },
     "dataset": {
-        "name": "SparseFeat2Render",
+        "name": "CustomSparseFeat2Render",
+        "type": "shapenet",
+        "category": "03001627",
         "args": {
             "image_size": 512,
+            "n_views": 24,
             "model": "dinov2_vitl14_reg",
             "resolution": 64,
             "min_aesthetic_score": 4.5,
-            "max_num_voxels": 32768
+            "max_num_voxels": 32768,
+            "pcs_path_3dfront": "/root/node1/data3/shape-generation/3D-FRONT/3D-FRONT-processed_bedroom-noair/bedrooms_without_lamps_full_colored_pcs/images_256_zuniform-h3-r5_noair",
+            "cam_path_3dfront": "/root/node1/data3/shape-generation/3D-FRONT/3D-FRONT-processed_bedroom-noair/bedrooms_without_lamps_full_labels_zuniform-h3-r5_noair"
         }
     },
     "trainer": {
         "name": "SLatVaeGaussianTrainer",
         "args": {
-            "max_steps": 1000000,
-            "batch_size_per_gpu": 4,
-            "batch_split": 2,
+            "max_steps": 300000,
+            "batch_size_per_gpu": 1,
+            "batch_split": 1,
             "optimizer": {
                 "name": "AdamW",
                 "args": {
@@ -89,9 +94,10 @@
                     "clip_percentile": 95
                 }
             },
-            "i_log": 500,
+            "i_print": 10,
+            "i_log": 1000,
             "i_sample": 10000,
-            "i_save": 10000,
+            "i_save": 20000,
             "loss_type": "l1",
             "lambda_ssim": 0.2,
             "lambda_lpips": 0.2,
@@ -99,6 +105,12 @@
             "regularizations": {
                 "lambda_vol": 10000.0,
                 "lambda_opacity": 0.001
+            },
+            "wandb_config": {
+                "use_wandb": true,
+                "project": "trellis_slat_vae", 
+                "name": "slat_vae_gs_300k_b1x8_shapenet_chair",
+                "mode": "online"
             }
         }
     }

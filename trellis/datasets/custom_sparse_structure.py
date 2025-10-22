@@ -35,6 +35,23 @@ class CustomSparseStructure(CustomStandardDatasetBase):
 
         super().__init__(roots, data_type, data_category)
 
+        assert self.data_type in ["shapenet", "gobjaverse", "3dfront"]
+
+        for root in self.roots:
+            if self.data_type == "shapenet":
+                data_root = os.path.join(root, self.data_category)
+                for instanceID in os.listdir(data_root):
+                    self.instances.append((data_root, instanceID))
+            elif self.data_type == "gobjaverse":
+                data_root = os.path.join(root, self.data_category)
+                for sub_category in os.listdir(data_root):
+                    for instanceID in os.listdir(os.path.join(data_root, sub_category)):
+                        self.instances.append((os.path.join(data_root, sub_category), instanceID))
+            elif self.data_type == "3dfront":
+                data_root = root
+                for instanceID in os.listdir(data_root):
+                    self.instances.append((data_root, instanceID))
+
     def get_instance(self, root, instance):
         position = utils3d.io.read_ply(os.path.join(root, instance, 'voxelized_pc.ply'))[0]
         coords = ((torch.tensor(position) + 0.5) * self.resolution).int().contiguous()

@@ -3,6 +3,7 @@ import math
 import os
 import time
 import json
+import wandb
 
 import torch
 import torch.distributed as dist
@@ -69,6 +70,7 @@ class Trainer:
         i_sample=10000,
         i_save=10000,
         i_ddpcheck=10000,
+        wandb_config={},
         **kwargs
     ):
         assert batch_size is not None or batch_size_per_gpu is not None, 'Either batch_size or batch_size_per_gpu must be specified.'
@@ -94,7 +96,8 @@ class Trainer:
         self.i_log = i_log
         self.i_sample = i_sample
         self.i_save = i_save
-        self.i_ddpcheck = i_ddpcheck        
+        self.i_ddpcheck = i_ddpcheck    
+        self.wandb_config = wandb_config
 
         if dist.is_initialized():
             # Multi-GPU params
@@ -108,6 +111,12 @@ class Trainer:
             self.rank = 0
             self.local_rank = 0
             self.is_master = True
+        if self.is_master and self.wandb_config["use_wandb"]:
+            wandb.init(
+                project=self.wandb_config["project"],
+                name=self.wandb_config["name"], 
+                mode=self.wandb_config["mode"]
+            )
 
         self.batch_size = batch_size if batch_size_per_gpu is None else batch_size_per_gpu * self.world_size
         self.batch_size_per_gpu = batch_size_per_gpu if batch_size_per_gpu is not None else batch_size // self.world_size
@@ -443,7 +452,7 @@ class Trainer:
                     with open(os.path.join(self.output_dir, 'log.txt'), 'a') as log_file:
                         log_file.write(log_str + '\n')
 
-                    # show with mlflow
+                    # show with mlflow/tensorboard
                     log_show = [l for _, l in entries if not dict_any(l, lambda x: np.isnan(x))]
                     log_show = dict_reduce(log_show, lambda x: float(np.mean(x)))  # ensure python float
                     log_show = dict_flatten(log_show, sep='/')
@@ -454,6 +463,23 @@ class Trainer:
                         if isinstance(value, torch.Tensor):
                             value = value.detach().cpu().item() if value.numel() == 1 else float(np.mean(value.detach().cpu().numpy()))
                         self.writer.add_scalar(key, value, self.step)
+
+                    if self.wandb_config["use_wandb"]:
+                        # log to wandb
+                        metrics = {
+                            "step_time": log_show['time/step'], 
+                            "elapsed_time": log_show['time/elapsed'],
+                            "grad_norm": float(log_show['status/grad_norm']),
+                            "max_norm": float(log_show['grad_clip/max_norm']),
+                            "loss": float(log_show['loss/loss']),
+                            "kl_loss": float(log_show['loss/kl']),
+                            "dice_loss": float(log_show['loss/dice']),
+                        }
+                        if self.fp16_mode == 'amp':
+                            metrics["scale"] = float(self.scaler.get_scale())
+                        elif self.fp16_mode == 'inflat_all':
+                            metrics["log_scale"] = float(self.log_scale) if not isinstance(self.log_scale, dict) else _json_safe(self.log_scale)
+                        self.log_wandb(metrics, "train", self.step)
 
                     log = []
 
@@ -479,4 +505,13 @@ class Trainer:
             for _ in range(wait + warmup + active):
                 self.run_step()
                 prof.step()
+
+    def log_wandb(self, data_dict, phase, step=None):
+        dict_ = dict()
+        for k, v in data_dict.items():
+            dict_[phase + "/" + k] = v
+        if self.rankzero:
+            wandb.log(dict_, step=step)
+        else:
+            return
             

@@ -3,6 +3,7 @@ import sys
 import json
 import glob
 import argparse
+from datetime import datetime, timezone, timedelta
 from easydict import EasyDict as edict
 
 import torch
@@ -128,6 +129,10 @@ if __name__ == '__main__':
     print(json.dumps(cfg.__dict__, indent=4))
 
     # Prepare output directory
+    kst = timezone(timedelta(hours=9))
+    run_suffix = f'_{datetime.now(kst).strftime("%Y%m%d_%H%M%S")}'
+    cfg.trainer.args.wandb_config.name += run_suffix
+    cfg.output_dir = os.path.join(cfg.output_dir, cfg.trainer.args.wandb_config.project, cfg.trainer.args.wandb_config.name)
     if cfg.node_rank == 0:
         os.makedirs(cfg.output_dir, exist_ok=True)
         ## Save command and config

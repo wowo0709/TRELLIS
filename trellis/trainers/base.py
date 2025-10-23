@@ -466,20 +466,20 @@ class Trainer:
 
                     if self.wandb_config["use_wandb"]:
                         # log to wandb
-                        metrics = {
-                            "step_time": log_show['time/step'], 
-                            "elapsed_time": log_show['time/elapsed'],
-                            "grad_norm": float(log_show['status/grad_norm']),
-                            "max_norm": float(log_show['grad_clip/max_norm']),
-                            "loss": float(log_show['loss/loss']),
-                            "kl_loss": float(log_show['loss/kl']),
-                            "dice_loss": float(log_show['loss/dice']),
-                        }
-                        if self.fp16_mode == 'amp':
-                            metrics["scale"] = float(self.scaler.get_scale())
-                        elif self.fp16_mode == 'inflat_all':
-                            metrics["log_scale"] = float(self.log_scale) if not isinstance(self.log_scale, dict) else _json_safe(self.log_scale)
-                        self.log_wandb(metrics, "train", self.step)
+                        # metrics = {
+                        #     "step_time": log_show['time/step'], 
+                        #     "elapsed_time": log_show['time/elapsed'],
+                        #     "grad_norm": float(log_show['status/grad_norm']),
+                        #     "max_norm": float(log_show['grad_clip/max_norm']),
+                        #     "loss": float(log_show['loss/loss']),
+                        #     "kl_loss": float(log_show['loss/kl']),
+                        #     "dice_loss": float(log_show['loss/dice']),
+                        # }
+                        # if self.fp16_mode == 'amp':
+                        #     metrics["scale"] = float(self.scaler.get_scale())
+                        # elif self.fp16_mode == 'inflat_all':
+                        #     metrics["log_scale"] = float(self.log_scale) if not isinstance(self.log_scale, dict) else _json_safe(self.log_scale)
+                        self.log_wandb(log_show, "train", self.step)
 
                     log = []
 
@@ -510,7 +510,7 @@ class Trainer:
         dict_ = dict()
         for k, v in data_dict.items():
             dict_[phase + "/" + k] = v
-        if self.rankzero:
+        if self.is_master:
             wandb.log(dict_, step=step)
         else:
             return

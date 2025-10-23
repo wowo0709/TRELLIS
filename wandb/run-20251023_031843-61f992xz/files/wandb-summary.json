@@ -1,0 +1,1 @@
+{"_runtime":145.171603306,"train/loss":0.8447740313410759,"train/grad_norm":0.5755448699599565,"train/kl_loss":0.4083268219046295,"train/max_norm":1,"train/log_scale":19.09900000000012,"train/elapsed_time":33.31447186708451,"train/step_time":0.6297904300689697,"train/dice_loss":0.8443657064437866,"_timestamp":1.7611896470096412e+09,"_step":100,"_wandb":{"runtime":145}}

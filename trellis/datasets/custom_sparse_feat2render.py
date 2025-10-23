@@ -1,10 +1,13 @@
+import json
 import os
 from PIL import Image
-import json
+from typing import Optional
+
 import numpy as np
 import pandas as pd
 import torch
 import utils3d.torch
+
 from ..modules.sparse.basic import SparseTensor
 from .components import CustomStandardDatasetBase
 
@@ -69,7 +72,7 @@ def rotation_from_forward_vec(
         return rotation_matrix
 
 
-class SparseFeat2Render(CustomStandardDatasetBase):
+class CustomSparseFeat2Render(CustomStandardDatasetBase):
     """
     SparseFeat2Render dataset.
     
@@ -85,7 +88,7 @@ class SparseFeat2Render(CustomStandardDatasetBase):
         self,
         roots: str,
         data_type: str, 
-        date_category: str,
+        data_category: str,
         image_size: int,
         n_views: int,
         model: str = 'dinov2_vitl14_reg',
@@ -105,7 +108,7 @@ class SparseFeat2Render(CustomStandardDatasetBase):
         self.pcs_path_3dfront = pcs_path_3dfront
         self.cam_path_3dfront = cam_path_3dfront
         
-        super().__init__(roots)
+        super().__init__(roots, data_type, data_category)
 
         # SLAT VAE use rendering & dino_feature data
         assert len(self.roots) % 2 == 0
@@ -175,9 +178,9 @@ class SparseFeat2Render(CustomStandardDatasetBase):
         # extrinsics = torch.inverse(c2w)
         view = np.random.randint(self.n_views)
         if self.data_type == "shapenet" or self.data_type == "gobjaverse":
-            camera_path = os.path.join(root, instance, "rendered_images", f"{view:05d}.json") if self.data_type == "shapenet"
+            camera_path = os.path.join(root, instance, "rendered_images", f"{view:05d}.json") if self.data_type == "shapenet" \
                                     else os.path.join(root, instance, instance, "campos_512_v4", f"{view:05d}", f"{view:05d}.json")
-            image_path = os.path.join(root, instance, "rendered_images", f"{view:05d}.png") if self.data_type == "shapenet"
+            image_path = os.path.join(root, instance, "rendered_images", f"{view:05d}.png") if self.data_type == "shapenet" \
                                     else os.path.join(root, instance, instance, "campos_512_v4", f"{view:05d}", f"{view:05d}.png")
 
             with open(camera_path) as f:

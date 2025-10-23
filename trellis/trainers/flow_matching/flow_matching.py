@@ -103,13 +103,13 @@ class FlowMatchingTrainer(BasicTrainer):
         """
         return (1 - self.sigma_min) * noise - x_0
 
-    def get_cond(self, cond, **kwargs):
+    def get_cond(self, cond: Optional = None, **kwargs):
         """
         Get the conditioning data.
         """
         return cond
     
-    def get_inference_cond(self, cond, **kwargs):
+    def get_inference_cond(self, cond: Optional = None, **kwargs):
         """
         Get the conditioning data for inference.
         """
@@ -216,7 +216,9 @@ class FlowMatchingTrainer(BasicTrainer):
                 self.models['denoiser'],
                 noise=noise,
                 **args,
-                steps=50, cfg_strength=3.0, verbose=verbose,
+                steps=50, 
+                # cfg_strength=3.0, 
+                verbose=verbose,
             )
             sample.append(res.samples)
 

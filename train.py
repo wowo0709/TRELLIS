@@ -120,6 +120,8 @@ if __name__ == '__main__':
     parser.add_argument('--num_gpus', type=int, default=-1, help='Number of GPUs per node, default to all')
     parser.add_argument('--master_addr', type=str, default='localhost', help='Master address for distributed training')
     parser.add_argument('--master_port', type=str, default='12345', help='Port for distributed training')
+    print("===== CPU =====")
+    print(os.cpu_count())
     opt = parser.parse_args()
     opt.load_dir = opt.load_dir if opt.load_dir != '' else opt.output_dir
     opt.num_gpus = torch.cuda.device_count() if opt.num_gpus == -1 else opt.num_gpus

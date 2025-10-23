@@ -10,8 +10,11 @@ __attributes = {
     'Slat2RenderGeo':'structured_latent2render',
     
     'SparseStructureLatent': 'sparse_structure_latent',
+    'CustomSparseStructureLatent': 'custom_sparse_structure_latent',
     'TextConditionedSparseStructureLatent': 'sparse_structure_latent',
+    'CustomTextConditionedSparseStructureLatent': 'custom_sparse_structure_latent',
     'ImageConditionedSparseStructureLatent': 'sparse_structure_latent',
+    'CustomImageConditionedSparseStructureLatent': 'custom_sparse_structure_latent',
     
     'SLat': 'structured_latent',
     'TextConditionedSLat': 'structured_latent',

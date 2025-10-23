@@ -4,7 +4,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import numpy as np
 from ..modules.utils import convert_module_to_f16, convert_module_to_f32
-from ..modules.transformer import AbsolutePositionEmbedder, ModulatedTransformerCrossBlock
+from ..modules.transformer import AbsolutePositionEmbedder, ModulatedTransformerBlock, ModulatedTransformerCrossBlock
 from ..modules.spatial import patchify, unpatchify
 
 
@@ -71,6 +71,7 @@ class SparseStructureFlowModel(nn.Module):
         share_mod: bool = False,
         qk_rms_norm: bool = False,
         qk_rms_norm_cross: bool = False,
+        use_context: bool = True,
     ):
         super().__init__()
         self.resolution = resolution
@@ -88,6 +89,7 @@ class SparseStructureFlowModel(nn.Module):
         self.share_mod = share_mod
         self.qk_rms_norm = qk_rms_norm
         self.qk_rms_norm_cross = qk_rms_norm_cross
+        self.use_context = use_context
         self.dtype = torch.float16 if use_fp16 else torch.float32
 
         self.t_embedder = TimestepEmbedder(model_channels)
@@ -118,6 +120,16 @@ class SparseStructureFlowModel(nn.Module):
                 share_mod=share_mod,
                 qk_rms_norm=self.qk_rms_norm,
                 qk_rms_norm_cross=self.qk_rms_norm_cross,
+            ) if self.use_context else
+            ModulatedTransformerBlock(
+                model_channels, 
+                num_heads=self.num_heads, 
+                mlp_ratio=self.mlp_ratio, 
+                attn_mode='full', 
+                use_checkpoint=self.use_checkpoint, 
+                use_rope=(pe_mode == "rope"), 
+                share_mod=share_mod, 
+                qk_rms_norm=self.qk_rms_norm
             )
             for _ in range(num_blocks)
         ])
@@ -173,7 +185,7 @@ class SparseStructureFlowModel(nn.Module):
         nn.init.constant_(self.out_layer.weight, 0)
         nn.init.constant_(self.out_layer.bias, 0)
 
-    def forward(self, x: torch.Tensor, t: torch.Tensor, cond: torch.Tensor) -> torch.Tensor:
+    def forward(self, x: torch.Tensor, t: torch.Tensor, cond: Optional[torch.Tensor] = None) -> torch.Tensor:
         assert [*x.shape] == [x.shape[0], self.in_channels, *[self.resolution] * 3], \
                 f"Input shape mismatch, got {x.shape}, expected {[x.shape[0], self.in_channels, *[self.resolution] * 3]}"
 
@@ -187,9 +199,11 @@ class SparseStructureFlowModel(nn.Module):
             t_emb = self.adaLN_modulation(t_emb)
         t_emb = t_emb.type(self.dtype)
         h = h.type(self.dtype)
-        cond = cond.type(self.dtype)
         for block in self.blocks:
-            h = block(h, t_emb, cond)
+            if cond is not None:
+                h = block(h, t_emb, cond.type(self.dtype))
+            else:
+                h = block(h, t_emb)
         h = h.type(x.dtype)
         h = F.layer_norm(h, h.shape[-1:])
         h = self.out_layer(h)

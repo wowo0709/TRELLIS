@@ -17,8 +17,11 @@ __attributes = {
     'CustomImageConditionedSparseStructureLatent': 'custom_sparse_structure_latent',
     
     'SLat': 'structured_latent',
+    'CustomSLat': 'custom_structured_latent',
     'TextConditionedSLat': 'structured_latent',
+    'CustomTextConditionedSLat': 'custom_structured_slat',
     'ImageConditionedSLat': 'structured_latent',
+    'CustomImageConditionedSLat': 'custom_structured_slat',
 }
 
 __submodules = []

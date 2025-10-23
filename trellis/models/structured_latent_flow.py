@@ -7,7 +7,7 @@ from ..modules.utils import zero_module, convert_module_to_f16, convert_module_t
 from ..modules.transformer import AbsolutePositionEmbedder
 from ..modules.norm import LayerNorm32
 from ..modules import sparse as sp
-from ..modules.sparse.transformer import ModulatedSparseTransformerCrossBlock
+from ..modules.sparse.transformer import ModulatedSparseTransformerBlock, ModulatedSparseTransformerCrossBlock
 from .sparse_structure_flow import TimestepEmbedder
 from .sparse_elastic_mixin import SparseTransformerElasticMixin
 
@@ -88,6 +88,7 @@ class SLatFlowModel(nn.Module):
         share_mod: bool = False,
         qk_rms_norm: bool = False,
         qk_rms_norm_cross: bool = False,
+        use_context: bool = True,
     ):
         super().__init__()
         self.resolution = resolution
@@ -108,6 +109,7 @@ class SLatFlowModel(nn.Module):
         self.share_mod = share_mod
         self.qk_rms_norm = qk_rms_norm
         self.qk_rms_norm_cross = qk_rms_norm_cross
+        self.use_context = use_context
         self.dtype = torch.float16 if use_fp16 else torch.float32
 
         if self.io_block_channels is not None:
@@ -158,6 +160,16 @@ class SLatFlowModel(nn.Module):
                 share_mod=self.share_mod,
                 qk_rms_norm=self.qk_rms_norm,
                 qk_rms_norm_cross=self.qk_rms_norm_cross,
+            ) if self.use_context else
+            ModulatedSparseTransformerBlock(
+                model_channels, 
+                num_heads=self.num_heads, 
+                mlp_ratio=self.mlp_ratio, 
+                attn_mode='full', 
+                use_checkpoint=self.use_checkpoint, 
+                use_rope=(pe_mode == "rope"), 
+                share_mod=share_mod, 
+                qk_rms_norm=self.qk_rms_norm
             )
             for _ in range(num_blocks)
         ])
@@ -237,13 +249,12 @@ class SLatFlowModel(nn.Module):
         nn.init.constant_(self.out_layer.weight, 0)
         nn.init.constant_(self.out_layer.bias, 0)
 
-    def forward(self, x: sp.SparseTensor, t: torch.Tensor, cond: torch.Tensor) -> sp.SparseTensor:
+    def forward(self, x: sp.SparseTensor, t: torch.Tensor, cond: Optional[torch.Tensor] = None) -> sp.SparseTensor:
         h = self.input_layer(x).type(self.dtype)
         t_emb = self.t_embedder(t)
         if self.share_mod:
             t_emb = self.adaLN_modulation(t_emb)
         t_emb = t_emb.type(self.dtype)
-        cond = cond.type(self.dtype)
 
         skips = []
         # pack with input blocks
@@ -254,7 +265,10 @@ class SLatFlowModel(nn.Module):
         if self.pe_mode == "ape":
             h = h + self.pos_embedder(h.coords[:, 1:]).type(self.dtype)
         for block in self.blocks:
-            h = block(h, t_emb, cond)
+            if cond is not None:
+                h = block(h, t_emb, cond.type(self.dtype))
+            else:
+                h = block(h, t_emb)
 
         # unpack with output blocks
         for block, skip in zip(self.out_blocks, reversed(skips)):

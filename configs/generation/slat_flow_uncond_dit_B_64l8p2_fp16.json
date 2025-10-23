@@ -1,9 +1,9 @@
 {
     "models": {
         "denoiser": {
-            "name": "SparseStructureFlowModel",
+            "name": "ElasticSLatFlowModel",
             "args": {
-                "resolution": 16,
+                "resolution": 64,
                 "in_channels": 8,
                 "out_channels": 8,
                 "model_channels": 768,
@@ -11,7 +11,9 @@
                 "num_blocks": 12,
                 "num_heads": 12,
                 "mlp_ratio": 4,
-                "patch_size": 1,
+                "patch_size": 2,
+                "num_io_res_blocks": 2,
+                "io_block_channels": [128],
                 "pe_mode": "ape",
                 "qk_rms_norm": true,
                 "use_fp16": true, 
@@ -20,18 +22,41 @@
         }
     },
     "dataset": {
-        "name": "CustomSparseStructureLatent",
+        "name": "CustomSLat",
         "type": "shapenet",
         "category": "03001627",
-        "data_path": "/root/node1/data3/shape-generation/shapenetv1/trellis/ss_latent_uniform_light",
+        "data_path": "/root/node1/data3/shape-generation/shapenetv1/trellis/slat_uniform_light",
         "args": {
-            "latent_model": "ss_enc_conv3d_16l8_fp16",
+            "latent_model": "dinov2_vitl14_reg_slat_enc_swin8_B_64l8_fp16",
             "min_aesthetic_score": 4.5,
-            "pretrained_ss_dec": "microsoft/TRELLIS-image-large/ckpts/ss_dec_conv3d_16l8_fp16"
+            "max_num_voxels": 32768,
+            "normalization": {
+                "mean": [
+                    -2.1687545776367188,
+                    -0.004347046371549368,
+                    -0.13352349400520325,
+                    -0.08418072760105133,
+                    -0.5271206498146057,
+                    0.7238689064979553,
+                    -1.1414450407028198,
+                    1.2039363384246826
+                ],
+                "std": [
+                    2.377650737762451,
+                    2.386378288269043,
+                    2.124418020248413,
+                    2.1748552322387695,
+                    2.663944721221924,
+                    2.371192216873169,
+                    2.6217446327209473,
+                    2.684523105621338
+                ]
+            },
+            "pretrained_slat_dec": "microsoft/TRELLIS-image-large/ckpts/slat_dec_gs_swin8_B_64l8gs32_fp16"
         }
     },
     "trainer": {
-        "name": "FlowMatchingTrainer",
+        "name": "SparseFlowMatchingTrainer",
         "args": {
             "max_steps": 500000,
             "batch_size_per_gpu": 1,
@@ -48,6 +73,13 @@
             ],
             "fp16_mode": "inflat_all",
             "fp16_scale_growth": 0.001,
+            "elastic": {
+                "name": "LinearMemoryController",
+                "args": {
+                    "target_ratio": 0.75,
+                    "max_mem_ratio_start": 0.5
+                }
+            },
             "grad_clip": {
                 "name": "AdaptiveGradClipper",
                 "args": {
@@ -67,11 +99,11 @@
                     "std": 1.0
                 }
             },
-            "sigma_min": 1e-5,
+            "sigma_min": 1e-5, 
             "wandb_config": {
                 "use_wandb": true,
-                "project": "trellis_ss_flow", 
-                "name": "ss_flow_500k_b1x8_shapenet_chair",
+                "project": "trellis_slat_flow", 
+                "name": "slat_flow_500k_b1x8_shapenet_chair",
                 "mode": "online"
             }
         }

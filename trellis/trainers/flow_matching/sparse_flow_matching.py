@@ -10,7 +10,7 @@ from easydict import EasyDict as edict
 
 from ...modules import sparse as sp
 from ...utils.general_utils import dict_reduce
-from ...utils.data_utils import cycle, BalancedResumableSampler
+from ...utils.data_utils import cycle, ResumableSampler, BalancedResumableSampler
 from .flow_matching import FlowMatchingTrainer
 from .mixins.classifier_free_guidance import ClassifierFreeGuidanceMixin
 from .mixins.text_conditioned import TextConditionedMixin
@@ -57,10 +57,16 @@ class SparseFlowMatchingTrainer(FlowMatchingTrainer):
         """
         Prepare dataloader.
         """
-        self.data_sampler = BalancedResumableSampler(
+        if hasattr(self.dataset, 'loads'):
+            self.data_sampler = BalancedResumableSampler(
+                self.dataset,
+                shuffle=True,
+                batch_size=self.batch_size_per_gpu,
+            )
+        else:
+            self.data_sampler = ResumableSampler(
             self.dataset,
             shuffle=True,
-            batch_size=self.batch_size_per_gpu,
         )
         self.dataloader = DataLoader(
             self.dataset,
@@ -149,7 +155,9 @@ class SparseFlowMatchingTrainer(FlowMatchingTrainer):
                 self.models['denoiser'],
                 noise=noise,
                 **args,
-                steps=50, cfg_strength=3.0, verbose=verbose,
+                steps=50, 
+                # cfg_strength=3.0, 
+                verbose=verbose,
             )
             sample.append(res.samples)
 

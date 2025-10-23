@@ -38,6 +38,38 @@ def _json_safe(x):
         return None
     return x
 
+def _is_nan_leaf(x) -> bool:
+    """NaN check that works for torch/np/python types without moving big tensors unnecessarily."""
+    if isinstance(x, torch.Tensor):
+        # Work on CPU but avoid copying huge tensors; check scalar fast-path
+        if x.numel() == 1:
+            return torch.isnan(x).item()
+        # For non-scalar tensors, 'any' on isfinite is safer:
+        return torch.isnan(x).any().item()
+    if isinstance(x, (np.floating, np.integer)):
+        return np.isnan(x)
+    if isinstance(x, np.ndarray):
+        return np.isnan(x).any()
+    if isinstance(x, float):
+        return math.isnan(x)
+    return False
+
+def _to_scalar_mean(x) -> float:
+    """Mean reducer that handles torch/np/python; moves tensors to CPU only when needed."""
+    if isinstance(x, torch.Tensor):
+        if x.numel() == 1:
+            return float(x.detach().cpu().item())
+        return float(x.detach().float().mean().cpu().item())
+    if isinstance(x, np.ndarray):
+        return float(np.mean(x))
+    if isinstance(x, (list, tuple)):
+        # if reducer receives a list of numbers/tensors, average them
+        vals = [_to_scalar_mean(v) for v in x]
+        return float(np.mean(vals)) if len(vals) > 0 else 0.0
+    if isinstance(x, (np.floating, np.integer)):
+        return float(x.item())
+    return float(x)  # fall back for python scalars
+
 
 
 class Trainer:
@@ -395,7 +427,9 @@ class Trainer:
             time_start = time.time()
 
             data_list = self.load_data()
-            step_log = self.run_step(data_list)
+            ret = self.run_step(data_list)
+            step_log = ret['step_log']
+            img_dict = ret['img_dict'] if 'img_dict' in ret else None
 
             time_end = time.time()
             time_elapsed += time_end - time_start
@@ -452,33 +486,49 @@ class Trainer:
                     with open(os.path.join(self.output_dir, 'log.txt'), 'a') as log_file:
                         log_file.write(log_str + '\n')
 
+                    # # show with mlflow/tensorboard
+                    # log_show = [l for _, l in entries if not dict_any(l, lambda x: np.isnan(x))]
+                    # log_show = dict_reduce(log_show, lambda x: float(np.mean(x)))  # ensure python float
+                    # log_show = dict_flatten(log_show, sep='/')
+                    # for key, value in log_show.items():
+                    #     # make sure value is a python scalar
+                    #     if isinstance(value, (np.generic,)):
+                    #         value = value.item()
+                    #     if isinstance(value, torch.Tensor):
+                    #         value = value.detach().cpu().item() if value.numel() == 1 else float(np.mean(value.detach().cpu().numpy()))
+                    #     self.writer.add_scalar(key, value, self.step)
+
+                    # if self.wandb_config["use_wandb"]:
+                    #     # log to wandb
+                    #     if img_dict is not None:
+                    #         img_show = {
+                    #             name: wandb.Image(tensor.squeeze(0).detach().cpu(), caption=name)
+                    #             for name, tensor in img_dict.items()
+                    #         }
+                    #         log_show.update(img_show)
+                    #     self.log_wandb(log_show, "train", self.step)
+
                     # show with mlflow/tensorboard
-                    log_show = [l for _, l in entries if not dict_any(l, lambda x: np.isnan(x))]
-                    log_show = dict_reduce(log_show, lambda x: float(np.mean(x)))  # ensure python float
+                    log_show = [l for _, l in entries if not dict_any(l, _is_nan_leaf)]
+                    log_show = dict_reduce(log_show, _to_scalar_mean)   # <-- use safe reducer
                     log_show = dict_flatten(log_show, sep='/')
+
                     for key, value in log_show.items():
-                        # make sure value is a python scalar
-                        if isinstance(value, (np.generic,)):
-                            value = value.item()
+                        # ensure python scalar for TB
                         if isinstance(value, torch.Tensor):
-                            value = value.detach().cpu().item() if value.numel() == 1 else float(np.mean(value.detach().cpu().numpy()))
+                            value = value.detach().cpu().item() if value.numel() == 1 else float(value.detach().cpu().mean().item())
+                        elif isinstance(value, (np.generic,)):
+                            value = value.item()
                         self.writer.add_scalar(key, value, self.step)
 
+                    # W&B (images already handled via .detach().cpu() above)
                     if self.wandb_config["use_wandb"]:
-                        # log to wandb
-                        # metrics = {
-                        #     "step_time": log_show['time/step'], 
-                        #     "elapsed_time": log_show['time/elapsed'],
-                        #     "grad_norm": float(log_show['status/grad_norm']),
-                        #     "max_norm": float(log_show['grad_clip/max_norm']),
-                        #     "loss": float(log_show['loss/loss']),
-                        #     "kl_loss": float(log_show['loss/kl']),
-                        #     "dice_loss": float(log_show['loss/dice']),
-                        # }
-                        # if self.fp16_mode == 'amp':
-                        #     metrics["scale"] = float(self.scaler.get_scale())
-                        # elif self.fp16_mode == 'inflat_all':
-                        #     metrics["log_scale"] = float(self.log_scale) if not isinstance(self.log_scale, dict) else _json_safe(self.log_scale)
+                        if img_dict is not None:
+                            img_show = {
+                                name: wandb.Image(tensor.squeeze(0).detach().cpu(), caption=name)
+                                for name, tensor in img_dict.items()
+                            }
+                            log_show.update(img_show)
                         self.log_wandb(log_show, "train", self.step)
 
                     log = []

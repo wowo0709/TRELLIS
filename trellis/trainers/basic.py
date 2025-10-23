@@ -356,7 +356,17 @@ class BasicTrainer(Trainer):
             sync_contexts = [self.training_models[name].no_sync for name in self.training_models] if i != len(data_list) - 1 and self.world_size > 1 else [nullcontext]
             with nested_contexts(*sync_contexts), elastic_controller_context():
                 with amp_context():
-                    loss, status = self.training_losses(**mb_data)
+                    ret = self.training_losses(**mb_data)
+                    if len(ret) == 2:
+                        loss, status = ret
+                        img_dict = None
+                    elif len(ret) == 3:
+                        loss, status, img_dict = ret
+                        # [1, 3, H, W], torch.float32, [0, 1]
+                        # print("\n", 'rec_image', img_dict['rec_image'].shape, img_dict['rec_image'].dtype, img_dict['rec_image'].min(), img_dict['rec_image'].max(), sep="\n")
+                        # print("\n", 'gt_image', img_dict['gt_image'].shape, img_dict['gt_image'].dtype, img_dict['gt_image'].min(), img_dict['gt_image'].max(), sep="\n")
+                    else:
+                        raise NotImplementedError(f"Unexpected number of returned output: {len(ret)}")
                     l = loss['loss'] / len(data_list)
                 ## backward
                 if self.fp16_mode == 'amp':
@@ -414,6 +424,8 @@ class BasicTrainer(Trainer):
         # Logs
         step_log['loss'] = dict_reduce(losses, lambda x: np.mean(x))
         step_log['status'] = dict_reduce(statuses, lambda x: np.mean(x), special_func={'min': lambda x: np.min(x), 'max': lambda x: np.max(x)})
+        if img_dict is not None:
+            step_log['image'] = img_dict
         if self.elastic_controller_config is not None:
             step_log['elastic'] = dict_reduce(elastic_controller_logs, lambda x: np.mean(x))
         if self.grad_clip is not None:
@@ -435,4 +447,6 @@ class BasicTrainer(Trainer):
         if self.is_master:
             self.update_ema()
 
-        return step_log
+        if img_dict is not None:
+            return {'step_log': step_log, 'img_dict': img_dict}
+        return {'step_log': step_log}

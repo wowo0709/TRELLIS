@@ -141,7 +141,7 @@ class SLatVaeGaussianTrainer(BasicTrainer):
         alpha: torch.Tensor,
         extrinsics: torch.Tensor,
         intrinsics: torch.Tensor,
-        return_aux: bool = False,
+        return_aux: bool = True,
         **kwargs
     ) -> Tuple[Dict, Dict]:
         """

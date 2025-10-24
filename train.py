@@ -7,12 +7,13 @@ from datetime import datetime, timezone, timedelta
 from easydict import EasyDict as edict
 
 import torch
+import torch.distributed as dist
 import torch.multiprocessing as mp
 import numpy as np
 import random
 
 from trellis import models, datasets, trainers
-from trellis.utils.dist_utils import setup_dist
+from trellis.utils.dist_utils import find_free_port, setup_dist
 
 
 def find_ckpt(cfg):
@@ -62,7 +63,9 @@ def main(local_rank, cfg):
     rank = cfg.node_rank * cfg.num_gpus + local_rank
     world_size = cfg.num_nodes * cfg.num_gpus
     if world_size > 1:
-        setup_dist(rank, local_rank, world_size, cfg.master_addr, cfg.master_port)
+        dist.init_process_group(backend="nccl", init_method=cfg.dist_url, world_size=world_size, rank=rank)
+        # setup_dist(rank, local_rank, world_size, cfg.master_addr, cfg.master_port)
+    torch.cuda.set_device(local_rank)
 
     # Seed rngs
     setup_rng(rank)
@@ -73,7 +76,7 @@ def main(local_rank, cfg):
         cfg.dataset.type, 
         cfg.dataset.category, 
         **cfg.dataset.args
-    )
+    ) # torch.distributed.DistNetworkError: The client socket has timed out after 600s while trying to connect to (127.0.0.1, 52209)
 
     # Build model
     model_dict = {
@@ -147,6 +150,10 @@ if __name__ == '__main__':
             print(' '.join(['python'] + sys.argv), file=fp)
         with open(os.path.join(cfg.output_dir, 'config.json'), 'w') as fp:
             json.dump(config, fp, indent=4)
+
+    # DDP
+    port = find_free_port()
+    cfg.dist_url = "tcp://127.0.0.1:{}".format(port)
 
     # Run
     if cfg.auto_retry == 0:

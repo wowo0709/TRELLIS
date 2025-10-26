@@ -69,15 +69,15 @@ def _ssim(img1, img2, window, window_size, channel, size_average=True):
         return ssim_map.mean(1).mean(1).mean(1)
 
 
-loss_fn_vgg = None
+lpips_loss_fn = None
 def lpips(img1, img2, value_range=(0, 1)):
-    global loss_fn_vgg
-    if loss_fn_vgg is None:
-        loss_fn_vgg = LPIPS(net='vgg').cuda().eval()
+    global lpips_loss_fn
+    if lpips_loss_fn is None:
+        lpips_loss_fn = LPIPS(net='vgg').cuda().eval() # alex?
     # normalize to [-1, 1]
     img1 = (img1 - value_range[0]) / (value_range[1] - value_range[0]) * 2 - 1
     img2 = (img2 - value_range[0]) / (value_range[1] - value_range[0]) * 2 - 1
-    return loss_fn_vgg(img1, img2).mean()
+    return lpips_loss_fn(img1, img2).mean()
 
 
 def normal_angle(pred, gt):

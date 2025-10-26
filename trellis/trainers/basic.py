@@ -424,8 +424,6 @@ class BasicTrainer(Trainer):
         # Logs
         step_log['loss'] = dict_reduce(losses, lambda x: np.mean(x))
         step_log['status'] = dict_reduce(statuses, lambda x: np.mean(x), special_func={'min': lambda x: np.min(x), 'max': lambda x: np.max(x)})
-        if img_dict is not None:
-            step_log['image'] = img_dict
         if self.elastic_controller_config is not None:
             step_log['elastic'] = dict_reduce(elastic_controller_logs, lambda x: np.mean(x))
         if self.grad_clip is not None:

@@ -66,6 +66,7 @@ class SLatVaeGaussianTrainer(BasicTrainer):
         self.loss_type = loss_type
         self.lambda_ssim = lambda_ssim
         self.lambda_lpips = lambda_lpips
+        
         self.lambda_kl = lambda_kl
         self.regularizations = regularizations
         

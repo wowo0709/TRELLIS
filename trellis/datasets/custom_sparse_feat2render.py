@@ -118,12 +118,12 @@ class CustomSparseFeat2Render(CustomStandardDatasetBase):
         if self.data_type == "3dfront":
             assert self.pcs_path_3dfront is not None and self.cam_path_3dfront is not None
 
-        # Rendering path
+        self.roots[1::2] = list(map(lambda x: os.path.join(x, self.model), self.roots[1::2]))
         for images_root, features_root in zip(self.roots[::2], self.roots[1::2]):
             if self.data_type == "shapenet":
                 data_root = os.path.join(features_root, self.data_category)
                 for instanceID in os.listdir(data_root):
-                    if not os.path.isdir(os.path.join(data_root, instanceID)):
+                    if not os.path.exists(os.path.join(data_root, instanceID, "features.npz")):
                         continue
                     self.instances.append(
                         (
@@ -138,7 +138,7 @@ class CustomSparseFeat2Render(CustomStandardDatasetBase):
                 data_root = os.path.join(features_root, self.data_category)
                 for sub_category in os.listdir(data_root):
                     for instanceID in os.listdir(os.path.join(data_root, sub_category)):
-                        if not os.path.isdir(os.path.join(data_root, sub_category, instanceID)):
+                        if not os.path.exists(os.path.join(data_root, sub_category, instanceID, "features.npz")):
                             continue
                         self.instances.append(
                             (
@@ -152,7 +152,7 @@ class CustomSparseFeat2Render(CustomStandardDatasetBase):
             elif self.data_type == "3dfront":
                 data_root = features_root
                 for instanceID in os.listdir(data_root):
-                    if not os.path.isdir(os.path.join(data_root, instanceID)):
+                    if not os.path.exists(os.path.join(data_root, "features.npz")):
                         continue
                     self.instances.append(
                         (

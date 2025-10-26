@@ -529,7 +529,9 @@ class Trainer:
                                 for name, tensor in img_dict.items()
                             }
                             log_show.update(img_show)
+                            del img_show, img_dict
                         self.log_wandb(log_show, "train", self.step)
+                    del log_show
 
                     log = []
 

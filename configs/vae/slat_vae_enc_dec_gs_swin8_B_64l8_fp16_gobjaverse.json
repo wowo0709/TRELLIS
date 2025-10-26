@@ -52,8 +52,8 @@
         "type": "gobjaverse",
         "category": "Food",
         "data_path": [
-                "/root/node3/data2/shape-generation/gobjaverse/gobjaverse_280k_category", 
-                "/root/node3/data2/shape-generation/gobjaverse/trellis/dino_features_gobjaverse_280k_category/dinov2_vitl14_reg"
+                "/root/node3/data2_ih/shape-generation/gobjaverse_280k_category", 
+                "/root/node3/data2/shape-generation/gobjaverse/trellis/dino_features_gobjaverse_280k_category"
             ],
         "args": {
             "image_size": 512,

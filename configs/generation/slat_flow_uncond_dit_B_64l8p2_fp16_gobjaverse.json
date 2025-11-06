@@ -25,7 +25,7 @@
         "name": "CustomSLat",
         "type": "gobjaverse",
         "category": "Plants",
-        "data_path": "/root/node2/data3/shape-generation/shapenetv1/trellis/slat_gobjaverse_280k_category",
+        "data_path": "/root/node2/data3/shape-generation/gobjaverse/trellis/slat_gobjaverse_280k_category",
         "args": {
             "latent_model": "dinov2_vitl14_reg_slat_enc_swin8_B_64l8_fp16",
             "min_aesthetic_score": 4.5,

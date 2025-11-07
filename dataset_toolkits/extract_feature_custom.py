@@ -219,7 +219,7 @@ def load_views_3dfront(images_root, raw_npz_path, camera_npz_path,
             torch.tensor(np.deg2rad(fov_deg), dtype=torch.float32)
         )
         views.append({"image": image, "extrinsics": extrinsics, "intrinsics": intrinsics})
-    return views
+    return views, float(h_centering)
 
 def load_views_gobjaverse(images_root, num_views=40, resize_to=518):
     """
@@ -389,30 +389,32 @@ def main():
     def _load_views_and_positions(entry):
         if dataset == "3dfront":
             inst, ply, img_root, raw_npz, cam_npz = entry
-            views = load_views_3dfront(img_root, raw_npz, cam_npz,
-                                       num_views=args.num_views, resize_to=518, fov_deg=args.fov3dfront_deg)
+            views, h_centering = load_views_3dfront(img_root, raw_npz, cam_npz,
+                                                    num_views=args.num_views, resize_to=518, fov_deg=args.fov3dfront_deg)
             pos = utils3d.io.read_ply(ply)[0].astype(np.float32)
-            return (inst,), views, pos
+            meta = {"h_centering": float(h_centering)}
+            return (inst,), views, pos, meta
         elif dataset == "gobjaverse":
             cat, sub, inst, ply, img_root = entry
             views = load_views_gobjaverse(img_root, num_views=args.num_views, resize_to=518)
             pos = utils3d.io.read_ply(ply)[0].astype(np.float32)
-            return (cat, sub, inst), views, pos
+            meta = {}
+            return (cat, sub, inst), views, pos, meta
         else:  # shapenet
             cat, inst, ply, img_root = entry
-            # For ShapeNet, typical #views=24; but use args.num_views to keep consistent UX
             views = load_views_shapenet(img_root, num_views=min(args.num_views, 40), resize_to=518)
             pos = utils3d.io.read_ply(ply)[0].astype(np.float32)
-            return (cat, inst), views, pos
+            meta = {}
+            return (cat, inst), views, pos, meta
 
     def loader(entry):
         try:
-            key_tuple, views, positions = _load_views_and_positions(entry)
-            load_q.put((key_tuple, views, positions))
+            key_tuple, views, positions, meta = _load_views_and_positions(entry)  # ← meta 포함
+            load_q.put((key_tuple, views, positions, meta))
         except Exception as e:
             print(f"[LoadError] {entry}: {e}")
 
-    def saver(key_tuple, pack):
+    def saver(key_tuple, pack, meta):
         if dataset == "3dfront":
             inst, = key_tuple
             out_dir = os.path.join(out_feat_root, inst)
@@ -423,7 +425,16 @@ def main():
             cat, inst = key_tuple
             out_dir = os.path.join(out_feat_root, cat, inst)
         os.makedirs(out_dir, exist_ok=True)
-        np.savez_compressed(os.path.join(out_dir, "features.npz"), **pack)
+
+        feat_path = os.path.join(out_dir, "features.npz")
+
+        np.savez_compressed(feat_path, **pack)
+
+        # 3D-FRONT에 한해 h_centering.txt 기록
+        if "h_centering" in meta:
+            hc_path = os.path.join(out_dir, "h_centering.txt")
+            with open(hc_path, "w") as f:
+                f.write(f"{meta['h_centering']:.8f}\n")
 
     with ThreadPoolExecutor(max_workers=args.workers) as loader_pool, \
          ThreadPoolExecutor(max_workers=args.workers) as saver_pool:
@@ -434,7 +445,7 @@ def main():
         pbar = tqdm(total=len(items), desc="Extracting DINO features", ncols=100)
 
         for done in range(len(items)):
-            key_tuple, views, positions = load_q.get()
+            key_tuple, views, positions, meta = load_q.get()  # ← meta 포함
 
             if len(views) == 0:
                 print(f"[Skip] No valid views for {key_tuple}")
@@ -481,7 +492,7 @@ def main():
             ).squeeze(2).permute(0, 2, 1).cpu().numpy()  # (V, N, 1024)
 
             pack["patchtokens"] = np.mean(sampled, axis=0).astype(np.float16)
-            saver_pool.submit(saver, key_tuple, pack)
+            saver_pool.submit(saver, key_tuple, pack, meta)
 
             # ETA
             elapsed = time.time() - start
@@ -498,3 +509,17 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+
+"""
+python extract_feature_custom.py \
+  --points_dir /data/ShapeNet_vox64 \
+  --images_dir /data/ShapeNet_renderings \
+  --output_root /data/ShapeNet_dino_feats \
+  --dataset shapenet \
+  --category chair \
+  --gpu 0 \
+  --batch_size 16 \
+  --num_views 24 \
+  --workers 8
+"""

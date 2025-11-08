@@ -94,7 +94,6 @@ class CustomSparseFeat2Render(CustomStandardDatasetBase):
         resolution: int = 64,
         min_aesthetic_score: float = 5.0,
         max_num_voxels: int = 32768,
-        pcs_path_3dfront: str = None,
         cam_path_3dfront: str = None,
     ):
         self.image_size = image_size
@@ -104,7 +103,6 @@ class CustomSparseFeat2Render(CustomStandardDatasetBase):
         self.min_aesthetic_score = min_aesthetic_score
         self.max_num_voxels = max_num_voxels
         self.value_range = (0, 1)
-        self.pcs_path_3dfront = pcs_path_3dfront
         self.cam_path_3dfront = cam_path_3dfront
         
         super().__init__(roots, data_type, data_category)
@@ -115,10 +113,12 @@ class CustomSparseFeat2Render(CustomStandardDatasetBase):
         assert self.data_type in ["shapenet", "gobjaverse", "3dfront"]
         
         if self.data_type == "3dfront":
-            assert self.pcs_path_3dfront is not None and self.cam_path_3dfront is not None
+            assert self.cam_path_3dfront is not None
 
         self.roots[1::2] = list(map(lambda x: os.path.join(x, self.model), self.roots[1::2]))
-        for images_root, features_root in zip(self.roots[::2], self.roots[1::2]):
+        self.images_root = self.roots[::2]
+        self.features_root = self.roots[1::2]
+        for images_root, features_root in zip(self.images_root, self.features_root):
             if self.data_type == "shapenet":
                 data_root = os.path.join(features_root, self.data_category)
                 for instanceID in os.listdir(data_root):
@@ -164,7 +164,7 @@ class CustomSparseFeat2Render(CustomStandardDatasetBase):
                     )
 
     # Renderings
-    def _get_image(self, root, instance):
+    def _get_image(self, root, instance, kwargs: Optional[dict] = None):
         # with open(os.path.join(root, 'renders', instance, 'transforms.json')) as f:
         #     metadata = json.load(f)
         # n_views = len(metadata['frames'])
@@ -193,10 +193,8 @@ class CustomSparseFeat2Render(CustomStandardDatasetBase):
             fov_x = metadata["x_fov"]
             fov_y = metadata["y_fov"]
         elif self.data_type == "3dfront":
-            # raise NotImplementedError("3D-FRONT dataset not implemented.")
-            pc = np.load(os.path.join(self.pcs_path_3dfront, instance, "colored_pc_100000.npz"), allow_pickle=True)
-            y_min, y_max = pc["coords"][:, 1].min(), pc["coords"][:, 1].max()
-            h_centering = (y_max - y_min) / 2.0
+            assert 'h_centering' in kwargs, "Key 'h_centering' should exist for 3dfront dataset"
+            h_centering = kwargs['h_centering']
 
             camera_path = os.path.join(self.cam_path_3dfront, instance, "boxes.npz")
             image_path = os.path.join(root, instance, f"{view:04d}_colors.png")
@@ -237,7 +235,7 @@ class CustomSparseFeat2Render(CustomStandardDatasetBase):
         }
     
     # DINO feature
-    def _get_feat(self, root, instance):
+    def _get_feat(self, root, instance, kwargs: Optional[dict] = None):
         DATA_RESOLUTION = 64
         feats_path = os.path.join(root, instance, "features.npz")
         feats = np.load(feats_path, allow_pickle=True)
@@ -286,8 +284,19 @@ class CustomSparseFeat2Render(CustomStandardDatasetBase):
         return pack
 
     def get_instance(self, root, instance):
-        image = self._get_image(root[0], instance)
-        feat = self._get_feat(root[1], instance)
+        meta = {}
+        if self.data_type == "3dfront":
+            hc_path = os.path.join(root[1], instance, "h_centering.txt")
+            if not os.path.exists(hc_path):
+                raise FileNotFoundError(f"h_centering.txt not found for 3D-FRONT instance {instance}: {hc_path}")
+            with open(hc_path, "r") as f:
+                raw_val = f.read().strip()
+            try:
+                meta['h_centering'] = float(raw_val)
+            except ValueError:
+                raise ValueError(f"Invalid h_centering value in {hc_path}: {raw_val!r}")
+        image = self._get_image(root[0], instance, meta)
+        feat = self._get_feat(root[1], instance, meta)
         return {
             **image,
             **feat,

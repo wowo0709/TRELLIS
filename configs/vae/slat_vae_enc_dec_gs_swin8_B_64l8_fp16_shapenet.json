@@ -63,7 +63,6 @@
             "resolution": 64,
             "min_aesthetic_score": 4.5,
             "max_num_voxels": 32768,
-            "pcs_path_3dfront": "/root/node1/data3/shape-generation/3D-FRONT/3D-FRONT-processed_bedroom-noair/bedrooms_without_lamps_full_colored_pcs/images_256_zuniform-h3-r5_noair",
             "cam_path_3dfront": "/root/node15/data/shape-generation/3D-FRONT/3D-FRONT-processed_bedroom-noair/bedrooms_without_lamps_full_labels_zuniform-h3-r5_noair"
         }
     },

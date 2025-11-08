@@ -40,6 +40,15 @@ def _voxelize_pointcloud(
     else:
         cols_in = np.zeros((pts_in.shape[0], 3), dtype=np.float32)
 
+    # ⭐ 3D-FRONT일 때: h_centering 계산 + y좌표 translation + 기록
+    h_centering = 0.0
+    if structure.lower() == "3dfront":
+        y_min = pts_in[:, 1].min()
+        y_max = pts_in[:, 1].max()
+        h_centering = (y_max - y_min) / 2.0
+        pts_in[:, 1] -= h_centering
+        print(f"[3D-FRONT] h_centering={h_centering:.6f} applied for {sha256}")
+
     # Subsample before voxelization
     if num_points is not None and len(pts_in) > num_points:
         idx = np.random.choice(len(pts_in), size=num_points, replace=False)
@@ -76,9 +85,20 @@ def _voxelize_pointcloud(
     grid_idx = np.array([v.grid_index for v in voxels], dtype=np.int64)
     centers = np.array(minb)[None, :] + (grid_idx + 0.5) * voxel_size
 
+    # ✅ 저장 디렉토리 생성
     os.makedirs(os.path.dirname(output_path), exist_ok=True)
+
+    # ✅ voxelized_pc.ply 저장
     utils3d.io.write_ply(output_path, centers.astype(np.float32))
     print(f"[Voxelized] {sha256} (voxels={len(centers)})")
+
+    # ⭐ 3D-FRONT일 때 h_centering.txt 파일 생성
+    if structure.lower() == "3dfront":
+        txt_path = os.path.join(os.path.dirname(output_path), "h_centering.txt")
+        with open(txt_path, "w") as f:
+            f.write(f"{h_centering:.8f}\n")
+        # print(f"[Saved] h_centering.txt → {txt_path}")
+
     return len(centers)
 
 

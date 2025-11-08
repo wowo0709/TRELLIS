@@ -105,12 +105,11 @@ def detect_dataset(args):
     # Otherwise assume ShapeNet
     return "shapenet"
 
-def list_3dfront(points_dir, images_dir, raw_points_dir, labels_dir, instance=None):
+def list_3dfront(points_dir, images_dir, labels_dir, instance=None):
     """
     Required:
       points_dir/<inst>/voxelized_pc.ply
       images_dir/<inst>/<0000..0039>_colors.png
-      raw_points_dir/<inst>/colored_pc_100000.npz
       labels_dir/<inst>/boxes.npz
     """
     items = []
@@ -118,10 +117,9 @@ def list_3dfront(points_dir, images_dir, raw_points_dir, labels_dir, instance=No
     for inst in ids:
         ply = os.path.join(points_dir, inst, "voxelized_pc.ply")
         img_root = os.path.join(images_dir, inst)
-        raw_npz = os.path.join(raw_points_dir, inst, "colored_pc_100000.npz")
         cam_npz = os.path.join(labels_dir, inst, "boxes.npz")
-        if all(map(_safe_exists, [ply, img_root, raw_npz, cam_npz])) and os.path.isdir(img_root):
-            items.append((inst, ply, img_root, raw_npz, cam_npz))
+        if all(map(_safe_exists, [ply, img_root, cam_npz])) and os.path.isdir(img_root):
+            items.append((inst, ply, img_root, cam_npz))
     return items
 
 def list_gobjaverse(points_dir, images_dir, category=None, sub_category=None, instance=None):
@@ -170,16 +168,12 @@ def list_shapenet(points_dir, images_dir, category=None, instance=None):
 # -----------------------
 # Per-dataset view loaders
 # -----------------------
-def load_views_3dfront(images_root, raw_npz_path, camera_npz_path,
+def load_views_3dfront(images_root, camera_npz_path, h_centering,
                        num_views=40, resize_to=518, fov_deg=70.0):
     """
     Build (image, extrinsics (World->Cam), normalized intrinsics) for 3D-FRONT.
-    Apply SAME Y-centering used in voxelization (h_centering).
+    Y-centering (h_centering) is provided externally (e.g., from h_centering.txt).
     """
-    pc = np.load(raw_npz_path, allow_pickle=True)
-    y_min, y_max = pc["coords"][:, 1].min(), pc["coords"][:, 1].max()
-    h_centering = (y_max - y_min) / 2.0
-
     cam = np.load(camera_npz_path, allow_pickle=True)
     if "camera_coords" not in cam or "target_coords" not in cam:
         raise KeyError(f"{camera_npz_path} missing 'camera_coords'/'target_coords'")
@@ -219,7 +213,7 @@ def load_views_3dfront(images_root, raw_npz_path, camera_npz_path,
             torch.tensor(np.deg2rad(fov_deg), dtype=torch.float32)
         )
         views.append({"image": image, "extrinsics": extrinsics, "intrinsics": intrinsics})
-    return views, float(h_centering)
+    return views
 
 def load_views_gobjaverse(images_root, num_views=40, resize_to=518):
     """
@@ -321,7 +315,6 @@ def main():
     parser.add_argument("--output_root", type=str, required=True, help="Where to save features")
     # 3D-FRONT specifics
     parser.add_argument("--labels_dir", type=str, default=None, help="3D-FRONT labels root (contains boxes.npz)")
-    parser.add_argument("--raw_points_dir", type=str, default=None, help="3D-FRONT raw PCs root (for h_centering)")
     parser.add_argument("--fov3dfront_deg", type=float, default=70.0, help="3D-FRONT symmetric FOV (deg)")
     # dataset selection
     parser.add_argument("--dataset", type=str, default="auto",
@@ -363,9 +356,9 @@ def main():
 
     # discover instances
     if dataset == "3dfront":
-        if not (args.labels_dir and args.raw_points_dir):
-            raise ValueError("3D-FRONT requires --labels_dir and --raw_points_dir.")
-        items = list_3dfront(args.points_dir, args.images_dir, args.raw_points_dir, args.labels_dir, instance=args.instance)
+        if not args.labels_dir:
+            raise ValueError("3D-FRONT requires --labels_dir.")
+        items = list_3dfront(args.points_dir, args.images_dir, args.labels_dir, instance=args.instance)
         if not items:
             print("No 3D-FRONT instances found.")
             return
@@ -388,7 +381,7 @@ def main():
     filtered_items = []
     for entry in items:
         if dataset == "3dfront":
-            inst, ply, img_root, raw_npz, cam_npz = entry
+            inst, ply, img_root, cam_npz = entry
             feat_path = os.path.join(out_feat_root, inst, "features.npz")
         elif dataset == "gobjaverse":
             cat, sub, inst, ply, img_root = entry
@@ -414,17 +407,30 @@ def main():
     # dataset-specific loader wrappers
     def _load_views_and_positions(entry):
         if dataset == "3dfront":
-            inst, ply, img_root, raw_npz, cam_npz = entry
-            views, h_centering = load_views_3dfront(
-                img_root,
-                raw_npz,
-                cam_npz,
+            inst, ply, img_root, cam_npz = entry
+
+            # 🔹 voxelized_pc.ply와 같은 위치의 h_centering.txt 읽기
+            hc_path = os.path.join(os.path.dirname(ply), "h_centering.txt")
+            if not os.path.exists(hc_path):
+                raise FileNotFoundError(f"h_centering.txt not found for {inst}: {hc_path}")
+
+            with open(hc_path, "r") as f:
+                raw_val = f.read().strip()
+            try:
+                h_centering = float(raw_val)
+            except ValueError:
+                raise ValueError(f"Invalid h_centering value in {hc_path}: {raw_val!r}")
+
+            # 🔹 읽어온 h_centering을 카메라에 적용
+            views = load_views_3dfront(
+                images_root=img_root,
+                camera_npz_path=cam_npz,
+                h_centering=h_centering,
                 num_views=args.num_views,
                 resize_to=518,
                 fov_deg=args.fov3dfront_deg,
             )
             pos = utils3d.io.read_ply(ply)[0].astype(np.float32)
-            pos[:, 1] -= float(h_centering)
             meta = {"h_centering": float(h_centering)}
             return (inst,), views, pos, meta
         elif dataset == "gobjaverse":

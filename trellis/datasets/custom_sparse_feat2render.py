@@ -14,7 +14,6 @@ from .components import CustomStandardDatasetBase
 
 
 def rotation_from_forward_vec(
-        self, 
         forward_vec: np.ndarray, 
         up_axis: str = 'Y', 
         inplane_rot: Optional[float] = None,
@@ -152,7 +151,7 @@ class CustomSparseFeat2Render(CustomStandardDatasetBase):
             elif self.data_type == "3dfront":
                 data_root = features_root
                 for instanceID in os.listdir(data_root):
-                    if not os.path.exists(os.path.join(data_root, "features.npz")):
+                    if not os.path.exists(os.path.join(data_root, instanceID, "features.npz")):
                         continue
                     self.instances.append(
                         (
@@ -214,10 +213,10 @@ class CustomSparseFeat2Render(CustomStandardDatasetBase):
             c2w = np.eye(4)
             c2w[:3, :3] = rotation_matrix
             c2w[:3, 3] = translation_vector
-            w2c = np.linalg.inv(extrinsic)
+            w2c = np.linalg.inv(c2w)
             fov_x = fov_y = np.deg2rad(70.0)
 
-        extrinsics = torch.from_numpy(w2c)
+        extrinsics = torch.from_numpy(w2c).to(torch.float32)
         intrinsics = utils3d.torch.intrinsics_from_fov_xy(
             torch.tensor(fov_x, dtype=torch.float32), 
             torch.tensor(fov_y, dtype=torch.float32)

@@ -22,8 +22,8 @@
     "dataset": {
         "name": "CustomSparseStructureLatent",
         "type": "gobjaverse",
-        "category": "Food",
-        "data_path": "/root/node3/data2/shape-generation/gobjaverse/trellis/ss_latent_gobjaverse_280k_category",
+        "category": "Plants",
+        "data_path": "/root/node1/data3/shape-generation/gobjaverse/trellis/ss_latent_gobjaverse_280k_category",
         "args": {
             "latent_model": "ss_enc_conv3d_16l8_fp16",
             "min_aesthetic_score": 4.5,
@@ -34,8 +34,8 @@
         "name": "FlowMatchingTrainer",
         "args": {
             "max_steps": 500000,
-            "batch_size_per_gpu": 2,
-            "batch_split": 2,
+            "batch_size_per_gpu": 4,
+            "batch_split": 4,
             "optimizer": {
                 "name": "AdamW",
                 "args": {
@@ -71,7 +71,7 @@
             "wandb_config": {
                 "use_wandb": true,
                 "project": "trellis_ss_flow", 
-                "name": "ss_flow_500k_b2x4_objaverse_food",
+                "name": "ss_flow_500k_b4x2_gobjaverse_plants",
                 "mode": "online"
             }
         }

@@ -22,8 +22,8 @@
     "dataset": {
         "name": "CustomSparseStructureLatent",
         "type": "shapenet",
-        "category": "03001627",
-        "data_path": "/root/node3/data2/shape-generation/shapenetv1/trellis/ss_latent_uniform_light",
+        "category": "02958343",
+        "data_path": "/root/node1/data3/shape-generation/shapenetv1/trellis/ss_latent_uniform_light",
         "args": {
             "latent_model": "ss_enc_conv3d_16l8_fp16",
             "min_aesthetic_score": 4.5,
@@ -34,8 +34,8 @@
         "name": "FlowMatchingTrainer",
         "args": {
             "max_steps": 500000,
-            "batch_size_per_gpu": 2,
-            "batch_split": 2,
+            "batch_size_per_gpu": 4,
+            "batch_split": 4,
             "optimizer": {
                 "name": "AdamW",
                 "args": {
@@ -71,7 +71,7 @@
             "wandb_config": {
                 "use_wandb": true,
                 "project": "trellis_ss_flow", 
-                "name": "ss_flow_500k_b2x4_shapenet_chair",
+                "name": "ss_flow_500k_b4x2_shapenet_car",
                 "mode": "online"
             }
         }

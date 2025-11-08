@@ -24,8 +24,8 @@
     "dataset": {
         "name": "CustomSLat",
         "type": "gobjaverse",
-        "category": "Plants",
-        "data_path": "/root/node2/data3/shape-generation/gobjaverse/trellis/slat_gobjaverse_280k_category",
+        "category": "Animals_subset",
+        "data_path": "/root/node1/data3/shape-generation/gobjaverse/trellis/slat_gobjaverse_280k_category",
         "args": {
             "latent_model": "dinov2_vitl14_reg_slat_enc_swin8_B_64l8_fp16",
             "min_aesthetic_score": 4.5,
@@ -59,8 +59,8 @@
         "name": "SparseFlowMatchingTrainer",
         "args": {
             "max_steps": 500000,
-            "batch_size_per_gpu": 2,
-            "batch_split": 2,
+            "batch_size_per_gpu": 4,
+            "batch_split": 4,
             "optimizer": {
                 "name": "AdamW",
                 "args": {
@@ -103,7 +103,7 @@
             "wandb_config": {
                 "use_wandb": true,
                 "project": "trellis_slat_flow", 
-                "name": "slat_flow_500k_b2x4_gobjaverse_plants",
+                "name": "slat_flow_500k_b4x2_gobjaverse_animals_subset",
                 "mode": "online"
             }
         }

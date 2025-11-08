@@ -326,6 +326,10 @@ def main():
     # dataset selection
     parser.add_argument("--dataset", type=str, default="auto",
                         choices=["auto", "3dfront", "shapenet", "gobjaverse"])
+    parser.add_argument("--vox_scale", type=float, required=True,
+                        help="Half-side S of voxel world cube [-S,S]. Must match how voxelized_pc.ply was produced.")
+    parser.add_argument("--vox_resolution", type=int, default=64,
+                        help="Voxel grid resolution R (e.g., 64, 128). Must match voxelization.")
     # optional filters
     parser.add_argument("--category", type=str, default=None)
     parser.add_argument("--sub_category", type=str, default=None)
@@ -445,6 +449,7 @@ def main():
         pbar = tqdm(total=len(items), desc="Extracting DINO features", ncols=100)
 
         for done in range(len(items)):
+            
             key_tuple, views, positions, meta = load_q.get()  # ← meta 포함
 
             if len(views) == 0:
@@ -453,8 +458,18 @@ def main():
                 continue
 
             positions_t = torch.from_numpy(positions).float().to(device)
-            indices = ((positions_t + 0.5) * 64).long()
-            assert torch.all(indices >= 0) and torch.all(indices < 64), "Voxel indices out-of-bounds"
+            S = float(args.vox_scale)        # e.g., 0.45 / 0.55 / 3.0
+            R = int(args.vox_resolution)     # e.g., 64 / 128
+
+            in_range = (positions_t >= -S) & (positions_t <= S)
+            if not torch.all(in_range):
+                bad_any = (~in_range).any(dim=1).nonzero(as_tuple=False).squeeze(-1)
+                sample = positions_t[bad_any[:5]].tolist()
+                raise ValueError(f"positions contain points outside [-{S},{S}] (e.g. {sample[:3]} ...)")
+                
+            indices = ((positions_t + S) * (R / (2.0 * S))).long()
+            indices = torch.clamp(indices, 0, R - 1)
+            assert torch.all(indices >= 0) and torch.all(indices < R), "Voxel indices out-of-bounds"
 
             pack = {"indices": indices.detach().cpu().numpy().astype(np.uint8)}
             patch_list, uv_list = [], []

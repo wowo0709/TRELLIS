@@ -23,7 +23,7 @@
         "name": "CustomSparseStructureLatent",
         "type": "gobjaverse",
         "category": "Plants",
-        "data_path": "/root/node1/data3/shape-generation/gobjaverse/trellis/ss_latent_gobjaverse_280k_category",
+        "data_path": "/root/node15/data/shape-generation/gobjaverse/trellis/ss_latent_gobjaverse_280k_category",
         "args": {
             "latent_model": "ss_enc_conv3d_16l8_fp16",
             "min_aesthetic_score": 4.5,

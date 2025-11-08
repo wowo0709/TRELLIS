@@ -26,8 +26,8 @@
     "dataset": {
         "name": "CustomSparseStructure",
         "type": "gobjaverse",
-        "category": "Food",
-        "data_path": "/root/node3/data2/shape-generation/gobjaverse/trellis/voxelized_pcs_gobjaverse_280k_category",
+        "category": "Plants",
+        "data_path": "/root/node15/data/shape-generation/gobjaverse/trellis/voxelized_pcs_gobjaverse_280k_category",
         "args": {
             "resolution": 64,
             "min_aesthetic_score": 4.5
@@ -67,7 +67,7 @@
             "wandb_config": {
                 "use_wandb": true,
                 "project": "trellis_ss_vae", 
-                "name": "ss_vae_300k_b2x4_gobjaverse_food",
+                "name": "ss_vae_300k_b2x4_gobjaverse_plants",
                 "mode": "online"
             }
         }

@@ -24,8 +24,8 @@
     "dataset": {
         "name": "CustomSLat",
         "type": "gobjaverse",
-        "category": "Animals_subset",
-        "data_path": "/root/node1/data3/shape-generation/gobjaverse/trellis/slat_gobjaverse_280k_category",
+        "category": "Plants",
+        "data_path": "/root/node15/data/shape-generation/gobjaverse/trellis/slat_gobjaverse_280k_category",
         "args": {
             "latent_model": "dinov2_vitl14_reg_slat_enc_swin8_B_64l8_fp16",
             "min_aesthetic_score": 4.5,

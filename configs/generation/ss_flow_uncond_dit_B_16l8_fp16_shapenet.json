@@ -23,7 +23,7 @@
         "name": "CustomSparseStructureLatent",
         "type": "shapenet",
         "category": "02958343",
-        "data_path": "/root/node1/data3/shape-generation/shapenetv1/trellis/ss_latent_uniform_light",
+        "data_path": "/root/node15/data/shape-generation/shapenetv1/trellis/ss_latent_uniform_light",
         "args": {
             "latent_model": "ss_enc_conv3d_16l8_fp16",
             "min_aesthetic_score": 4.5,

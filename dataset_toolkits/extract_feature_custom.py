@@ -385,6 +385,28 @@ def main():
     out_feat_root = os.path.join(args.output_root, args.feat_model)
     os.makedirs(out_feat_root, exist_ok=True)
 
+    filtered_items = []
+    for entry in items:
+        if dataset == "3dfront":
+            inst, ply, img_root, raw_npz, cam_npz = entry
+            feat_path = os.path.join(out_feat_root, inst, "features.npz")
+        elif dataset == "gobjaverse":
+            cat, sub, inst, ply, img_root = entry
+            feat_path = os.path.join(out_feat_root, cat, sub, inst, "features.npz")
+        else:  # shapenet
+            cat, inst, ply, img_root = entry
+            feat_path = os.path.join(out_feat_root, cat, inst, "features.npz")
+
+        if os.path.exists(feat_path):
+            print(f"[Skip existing] {feat_path}")
+            continue
+        filtered_items.append(entry)
+
+    items = filtered_items
+    if not items:
+        print("All instances already have features.npz. Nothing to do.")
+        return
+
     # queues
     load_q = Queue(maxsize=8)
     start = time.time()
@@ -460,6 +482,11 @@ def main():
             positions_t = torch.from_numpy(positions).float().to(device)
             S = float(args.vox_scale)        # e.g., 0.45 / 0.55 / 3.0
             R = int(args.vox_resolution)     # e.g., 64 / 128
+
+            if positions_t.numel() == 0:
+                print(f"[Skip] Empty voxel grid for {key_tuple}")
+                pbar.update(1)
+                continue
 
             in_range = (positions_t >= -S) & (positions_t <= S)
             if not torch.all(in_range):

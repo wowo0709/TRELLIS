@@ -26,8 +26,8 @@
     "dataset": {
         "name": "CustomSparseStructure",
         "type": "shapenet",
-        "category": "03001627",
-        "data_path": "/root/node3/data2/shape-generation/shapenetv1/trellis/voxelized_pcs_uniform_light",
+        "category": "02958343",
+        "data_path": "/root/node15/data/shape-generation/shapenetv1/trellis/voxelized_pcs_uniform_light",
         "args": {
             "resolution": 64,
             "min_aesthetic_score": 4.5
@@ -67,7 +67,7 @@
             "wandb_config": {
                 "use_wandb": true,
                 "project": "trellis_ss_vae", 
-                "name": "ss_vae_300k_b2x4_shapenet_chair",
+                "name": "ss_vae_300k_b2x4_shapenet_car",
                 "mode": "online"
             }
         }

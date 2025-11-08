@@ -415,9 +415,16 @@ def main():
     def _load_views_and_positions(entry):
         if dataset == "3dfront":
             inst, ply, img_root, raw_npz, cam_npz = entry
-            views, h_centering = load_views_3dfront(img_root, raw_npz, cam_npz,
-                                                    num_views=args.num_views, resize_to=518, fov_deg=args.fov3dfront_deg)
+            views, h_centering = load_views_3dfront(
+                img_root,
+                raw_npz,
+                cam_npz,
+                num_views=args.num_views,
+                resize_to=518,
+                fov_deg=args.fov3dfront_deg,
+            )
             pos = utils3d.io.read_ply(ply)[0].astype(np.float32)
+            pos[:, 1] -= float(h_centering)
             meta = {"h_centering": float(h_centering)}
             return (inst,), views, pos, meta
         elif dataset == "gobjaverse":

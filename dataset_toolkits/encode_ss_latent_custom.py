@@ -297,3 +297,14 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+
+"""
+python encode_ss_latent_custom.py \
+  --points_dir /data/shapenet_vox64 \
+  --output_dir /data/ss_latents_out \
+  --structure shapenet \
+  --category chair \
+  --resolution 64 \
+  --gpu 0
+"""

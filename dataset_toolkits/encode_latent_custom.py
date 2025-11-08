@@ -295,3 +295,13 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+
+"""
+python encode_latent_custom.py \
+  --input_dir /data/dino_feats/dinov2_vitl14_reg \
+  --output_dir /data/slat_out \
+  --structure shapenet \
+  --category chair \
+  --gpu 0
+"""

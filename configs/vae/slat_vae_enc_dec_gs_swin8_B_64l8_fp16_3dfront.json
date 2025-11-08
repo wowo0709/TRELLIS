@@ -39,10 +39,11 @@
                     "voxel_size": 1.5,
                     "num_gaussians": 32,
                     "2d_filter_kernel_size": 0.1,
-                    "3d_filter_kernel_size": 9e-4,
-                    "scaling_bias": 4e-3,
+                    "3d_filter_kernel_size": 5.4e-3,
+                    "scaling_bias": 2.4e-2,
                     "opacity_bias": 0.1,
-                    "scaling_activation": "softplus"
+                    "scaling_activation": "softplus",
+                    "aabb": [-3.0, -3.0, -3.0, 6.0, 6.0, 6.0]
                 }
             }
         }
@@ -53,7 +54,7 @@
         "category": "bedrooms",
         "data_path": [
                 "/root/node1/data3/shape-generation/3D-FRONT/3D-FRONT-processed_bedroom-noair/bedrooms_without_lamps_full_images/images_256_zuniform-h3-r5_noair", 
-                "/root/node1/data3/shape-generation/3D-FRONT/3D-FRONT-processed_bedroom-noair/trellis/bedrooms_without_lamps_full_dino_features/images_256_zuniform-h3-r5_noair"
+                "/root/node1/data3/shape-generation/3D-FRONT/3D-FRONT-processed_bedroom-noair/trellis_new/bedrooms_without_lamps_full_dino_features/images_256_zuniform-h3-r5_noair"
             ],
         "args": {
             "image_size": 256,
@@ -70,8 +71,8 @@
         "name": "SLatVaeGaussianTrainer",
         "args": {
             "max_steps": 300000,
-            "batch_size_per_gpu": 4,
-            "batch_split": 4,
+            "batch_size_per_gpu": 2,
+            "batch_split": 2,
             "optimizer": {
                 "name": "AdamW",
                 "args": {
@@ -113,7 +114,7 @@
             "wandb_config": {
                 "use_wandb": true,
                 "project": "trellis_slat_vae", 
-                "name": "slat_vae_gs_300k_b4x2_3dfront_bedrooms",
+                "name": "slat_vae_gs_300k_b2x4_3dfront_bedrooms",
                 "mode": "online"
             }
         }

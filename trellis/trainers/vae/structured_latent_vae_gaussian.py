@@ -241,7 +241,7 @@ class SLatVaeGaussianTrainer(BasicTrainer):
         ret_dict.update({f'rec_image': {'value': render_results['color'], 'type': 'image'}})
 
         # render multiview
-        self.renderer.rendering_options.resolution = 512
+        # self.renderer.rendering_options.resolution = 512
         ## Build camera
         yaws = [0, np.pi / 2, np.pi, 3 * np.pi / 2]
         yaws_offset = np.random.uniform(-np.pi / 4, np.pi / 4)

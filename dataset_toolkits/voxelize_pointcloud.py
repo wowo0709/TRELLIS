@@ -83,6 +83,7 @@ def _voxelize_pointcloud(
         return 0
 
     grid_idx = np.array([v.grid_index for v in voxels], dtype=np.int64)
+    grid_idx = np.clip(grid_idx, 0, resolution - 1)
     centers = np.array(minb)[None, :] + (grid_idx + 0.5) * voxel_size
 
     # ✅ 저장 디렉토리 생성

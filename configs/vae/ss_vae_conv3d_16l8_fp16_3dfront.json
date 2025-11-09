@@ -30,7 +30,8 @@
         "data_path": "/root/node1/data3/shape-generation/3D-FRONT/3D-FRONT-processed_bedroom-noair/trellis/bedrooms_without_lamps_full_voxelized_pcs/images_256_zuniform-h3-r5_noair",
         "args": {
             "resolution": 64,
-            "min_aesthetic_score": 4.5
+            "min_aesthetic_score": 4.5, 
+            "aabb": [-3.0, -3.0, -3.0, 6.0, 6.0, 6.0]
         }
     },
     "trainer": {

@@ -27,10 +27,11 @@
         "name": "CustomSparseStructure",
         "type": "shapenet",
         "category": "02958343",
-        "data_path": "/root/node15/data/shape-generation/shapenetv1/trellis/voxelized_pcs_uniform_light",
+        "data_path": "/root/node3/data2/shape-generation/shapenetv1/trellis_new/voxelized_pcs_uniform_light_new",
         "args": {
             "resolution": 64,
-            "min_aesthetic_score": 4.5
+            "min_aesthetic_score": 4.5, 
+            "aabb": [-0.55, -0.55, -0.55, 1.1, 1.1, 1.1]
         }
     },
     "trainer": {

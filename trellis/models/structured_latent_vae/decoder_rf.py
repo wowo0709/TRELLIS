@@ -83,7 +83,7 @@ class SLatRadianceFieldDecoder(SparseTransformerBase):
             representation = Strivec(
                 sh_degree=0,
                 resolution=self.resolution,
-                aabb=[-0.5, -0.5, -0.5, 1, 1, 1],
+                aabb=self.rep_config["aabb"],
                 rank=self.rep_config['rank'],
                 dim=self.rep_config['dim'],
                 device='cuda',

@@ -19,6 +19,7 @@ class CustomSparseStructureLatentVisMixin:
         pretrained_ss_dec: str = 'microsoft/TRELLIS-image-large/ckpts/ss_dec_conv3d_16l8_fp16',
         ss_dec_path: Optional[str] = None,
         ss_dec_ckpt: Optional[str] = None,
+        aabb: list = [-0.5, -0.5, -0.5, 1.0, 1.0, 1.0],
         **kwargs
     ):
         super().__init__(roots, data_type, data_category, **kwargs)
@@ -26,6 +27,7 @@ class CustomSparseStructureLatentVisMixin:
         self.pretrained_ss_dec = pretrained_ss_dec
         self.ss_dec_path = ss_dec_path
         self.ss_dec_ckpt = ss_dec_ckpt
+        self.aabb = aabb
         
     def _loading_ss_dec(self):
         if self.ss_dec is not None:
@@ -95,7 +97,7 @@ class CustomSparseStructureLatentVisMixin:
         for i in range(x_0.shape[0]):
             representation = Octree(
                 depth=10,
-                aabb=[-0.5, -0.5, -0.5, 1, 1, 1],
+                aabb=self.aabb,
                 device='cuda',
                 primitive='voxel',
                 sh_degree=0,
@@ -140,6 +142,7 @@ class CustomSparseStructureLatent(CustomSparseStructureLatentVisMixin, CustomSta
         pretrained_ss_dec: str = 'microsoft/TRELLIS-image-large/ckpts/ss_dec_conv3d_16l8_fp16',
         ss_dec_path: Optional[str] = None,
         ss_dec_ckpt: Optional[str] = None,
+        aabb: list = [-0.5, -0.5, -0.5, 1.0, 1.0, 1.0],
     ):
         self.latent_model = latent_model
         self.min_aesthetic_score = min_aesthetic_score
@@ -153,6 +156,7 @@ class CustomSparseStructureLatent(CustomSparseStructureLatentVisMixin, CustomSta
             pretrained_ss_dec=pretrained_ss_dec,
             ss_dec_path=ss_dec_path,
             ss_dec_ckpt=ss_dec_ckpt,
+            aabb=aabb,
         )
 
         assert self.data_type in ["shapenet", "gobjaverse", "3dfront"]

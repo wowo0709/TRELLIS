@@ -28,9 +28,11 @@ class CustomSparseStructure(CustomStandardDatasetBase):
         data_category,
         resolution: int = 64,
         min_aesthetic_score: float = 5.0,
+        aabb: list = [-0.5, -0.5, -0.5, 1.0, 1.0, 1.0]
     ):
         self.resolution = resolution
         self.min_aesthetic_score = min_aesthetic_score
+        self.aabb = aabb
         self.value_range = (0, 1)
 
         super().__init__(roots, data_type, data_category)
@@ -98,7 +100,7 @@ class CustomSparseStructure(CustomStandardDatasetBase):
         for i in range(ss.shape[0]):
             representation = Octree(
                 depth=10,
-                aabb=[-0.5, -0.5, -0.5, 1, 1, 1],
+                aabb=self.aabb,
                 device='cuda',
                 primitive='voxel',
                 sh_degree=0,

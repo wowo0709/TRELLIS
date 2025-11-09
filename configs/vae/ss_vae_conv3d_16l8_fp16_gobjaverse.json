@@ -27,10 +27,11 @@
         "name": "CustomSparseStructure",
         "type": "gobjaverse",
         "category": "Plants",
-        "data_path": "/root/node15/data/shape-generation/gobjaverse/trellis/voxelized_pcs_gobjaverse_280k_category",
+        "data_path": "/root/node3/data2/shape-generation/gobjaverse/trellis_new/voxelized_pcs_gobjaverse_280k_category",
         "args": {
             "resolution": 64,
-            "min_aesthetic_score": 4.5
+            "min_aesthetic_score": 4.5, 
+            "aabb": [-0.45, -0.45, -0.45, 0.9, 0.9, 0.9]
         }
     },
     "trainer": {

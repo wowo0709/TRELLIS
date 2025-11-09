@@ -27,7 +27,7 @@
         "name": "CustomSparseStructure",
         "type": "shapenet",
         "category": "02958343",
-        "data_path": "/root/node3/data2/shape-generation/shapenetv1/trellis_new/voxelized_pcs_uniform_light_new",
+        "data_path": "/root/node3/data2/shape-generation/shapenetv1/trellis_new/voxelized_pcs_uniform_light",
         "args": {
             "resolution": 64,
             "min_aesthetic_score": 4.5, 

@@ -86,12 +86,21 @@ def _voxelize_pointcloud(
     grid_idx = np.clip(grid_idx, 0, resolution - 1)
     centers = np.array(minb)[None, :] + (grid_idx + 0.5) * voxel_size
 
+    # 🔍 디버깅용 출력
+    if (grid_idx > (resolution - 1)).any() or (grid_idx < 0).any() \
+       or (centers > scale).any() or (centers < -scale).any():
+        print(
+            f"[⚠️ Debug Warning] {sha256} | "
+            f"grid_idx min={grid_idx.min(axis=0)} max={grid_idx.max(axis=0)} "
+            f"| centers min={centers.min(axis=0)} max={centers.max(axis=0)}"
+        )
+
     # ✅ 저장 디렉토리 생성
     os.makedirs(os.path.dirname(output_path), exist_ok=True)
 
     # ✅ voxelized_pc.ply 저장
     utils3d.io.write_ply(output_path, centers.astype(np.float32))
-    print(f"[Voxelized] {sha256} (voxels={len(centers)})")
+    # print(f"[Voxelized] {sha256} (voxels={len(centers)})")
 
     # ⭐ 3D-FRONT일 때 h_centering.txt 파일 생성
     if structure.lower() == "3dfront":

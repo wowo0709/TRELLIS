@@ -56,7 +56,19 @@ class CustomSparseStructure(CustomStandardDatasetBase):
 
     def get_instance(self, root, instance):
         position = utils3d.io.read_ply(os.path.join(root, instance, 'voxelized_pc.ply'))[0]
-        coords = ((torch.tensor(position) + 0.5) * self.resolution).int().contiguous()
+
+        pos = torch.tensor(position, dtype=torch.float32)
+
+        # aabb = [xmin, ymin, zmin, size_x, size_y, size_z]
+        min_xyz = torch.tensor(self.aabb[:3], dtype=torch.float32)      # 예: [-0.55, -0.55, -0.55]
+        size_xyz = torch.tensor(self.aabb[3:], dtype=torch.float32)     # 예: [1.10, 1.10, 1.10]
+
+        # 월드 좌표 -> [0, resolution) 인덱스로 선형 매핑
+        coords = ((pos - min_xyz) * self.resolution / size_xyz).long()
+
+        # 안전하게 0 ~ resolution-1로 클램프
+        coords = coords.clamp(0, self.resolution - 1)
+
         ss = torch.zeros(1, self.resolution, self.resolution, self.resolution, dtype=torch.long)
         ss[:, coords[:, 0], coords[:, 1], coords[:, 2]] = 1
         return {'ss': ss}

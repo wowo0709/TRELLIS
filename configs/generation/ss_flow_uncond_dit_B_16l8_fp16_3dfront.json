@@ -27,6 +27,8 @@
         "args": {
             "latent_model": "ss_enc_conv3d_16l8_fp16",
             "min_aesthetic_score": 4.5,
+            "ss_dec_path": null,
+            "ss_dec_ckpt": "step0300000",
             "pretrained_ss_dec": "microsoft/TRELLIS-image-large/ckpts/ss_dec_conv3d_16l8_fp16",
             "aabb": [-3.0, -3.0, -3.0, 6.0, 6.0, 6.0]
         }

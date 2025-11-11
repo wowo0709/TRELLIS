@@ -52,6 +52,8 @@
                     2.684523105621338
                 ]
             },
+            "slat_dec_path": null,
+            "slat_dec_ckpt": "step0300000",
             "pretrained_slat_dec": "microsoft/TRELLIS-image-large/ckpts/slat_dec_gs_swin8_B_64l8gs32_fp16"
         }
     },

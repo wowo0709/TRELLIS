@@ -115,7 +115,10 @@ class CustomSparseFeat2Render(CustomStandardDatasetBase):
         if self.data_type == "3dfront":
             assert self.cam_path_3dfront is not None
 
-        self.roots[1::2] = list(map(lambda x: os.path.join(x, self.model), self.roots[1::2]))
+        self.roots[1::2] = list(map(
+            lambda x: os.path.join(x, self.model) if not x.endswith(self.model) else x, 
+            self.roots[1::2]
+        ))
         self.images_root = self.roots[::2]
         self.features_root = self.roots[1::2]
         for images_root, features_root in zip(self.images_root, self.features_root):
@@ -281,6 +284,9 @@ class CustomSparseFeat2Render(CustomStandardDatasetBase):
         pack['extrinsics'] = torch.stack([b['extrinsics'] for b in batch])
         pack['intrinsics'] = torch.stack([b['intrinsics'] for b in batch])
 
+        if 'instance_id' in batch[0]:
+            pack['instance_id'] = [b['instance_id'] for b in batch]
+
         return pack
 
     def get_instance(self, root, instance):
@@ -300,4 +306,5 @@ class CustomSparseFeat2Render(CustomStandardDatasetBase):
         return {
             **image,
             **feat,
+            "instance_id": instance
         }

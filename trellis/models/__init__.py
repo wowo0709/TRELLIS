@@ -67,7 +67,7 @@ def from_pretrained(path: str, **kwargs):
     model = __getattr__(config['name'])(**config['args'], **kwargs)
     model.load_state_dict(load_file(model_file))
 
-    return model
+    return model 
 
 
 # For Pylance

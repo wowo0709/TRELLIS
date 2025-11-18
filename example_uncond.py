@@ -17,7 +17,7 @@ pipeline.cuda()
 
 # Run the pipeline
 outputs = pipeline.run(
-    num_samples=10,
+    num_samples=1,
     seed=0,
     formats=['gaussian'],
 )

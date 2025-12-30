@@ -31,13 +31,16 @@ class CustomSparseStructureLatentVisMixin:
         
     def _loading_ss_dec(self):
         if self.ss_dec is not None:
+            print("=> Pretrained sparse structure decoder already loaded.")
             return
         if self.ss_dec_path is not None:
+            print("=> Pretrained sparse structure decoder path is given.")
             cfg = json.load(open(os.path.join(self.ss_dec_path, 'config.json'), 'r'))
             decoder = getattr(models, cfg['models']['decoder']['name'])(**cfg['models']['decoder']['args'])
             ckpt_path = os.path.join(self.ss_dec_path, 'ckpts', f'decoder_{self.ss_dec_ckpt}.pt')
             decoder.load_state_dict(torch.load(ckpt_path, map_location='cpu', weights_only=True))
         else:
+            print("=> No path given. Load checkpoint from huggingface.")
             decoder = models.from_pretrained(self.pretrained_ss_dec)
         self.ss_dec = decoder.cuda().eval()
 

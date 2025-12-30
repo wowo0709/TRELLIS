@@ -304,4 +304,13 @@ python encode_latent_custom.py \
   --structure shapenet \
   --category chair \
   --gpu 0
+
+python dataset_toolkits/encode_latent_custom.py \
+    --input_dir /root/node1/data3/shape-generation/3D-FRONT/3D-FRONT-processed_bedroom-noair/trellis_new/bedrooms_without_lamps_full_dino_features/images_256_zuniform-h3-r5_noair/dinov2_vitl14_reg \
+    --output_dir /root/node1/data3/shape-generation/3D-FRONT/3D-FRONT-processed_bedroom-noair/trellis_custom/bedrooms_without_lamps_full_slat/images_256_zuniform-h3-r5_noair \
+    --model_root /root/node1/data3/shape-generation/TRELLIS/outputs/trellis_slat_vae \
+    --enc_model slat_vae_gs_300k_b4x2_3dfront_bedrooms_20251109_180308 \
+    --ckpt step0300000 \
+    --structure 3dfront \
+    --gpu 0
 """

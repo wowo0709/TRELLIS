@@ -307,4 +307,14 @@ python encode_ss_latent_custom.py \
   --category chair \
   --resolution 64 \
   --gpu 0
+
+python dataset_toolkits/encode_ss_latent_custom.py \
+    --points_dir /root/node1/data3/shape-generation/3D-FRONT/3D-FRONT-processed_bedroom-noair/trellis_new/bedrooms_without_lamps_full_voxelized_pcs/images_256_zuniform-h3-r5_noair \
+    --output_dir /root/node1/data3/shape-generation/3D-FRONT/3D-FRONT-processed_bedroom-noair/trellis_custom/bedrooms_without_lamps_full_ss_latent/images_256_zuniform-h3-r5_noair \
+    --model_root /root/node1/data3/shape-generation/TRELLIS/outputs/trellis_ss_vae \
+    --enc_model ss_vae_300k_b4x2_3dfront_bedrooms_20251112_213954 \
+    --ckpt step0300000 \
+    --structure 3dfront \
+    --resolution 64 \
+    --gpu 0
 """

@@ -138,12 +138,14 @@ class TextConditionedMixin:
 
 
 class CustomTextConditionedMixin:
-    def __init__(self, roots, **kwargs):
-        super().__init__(roots, **kwargs)
+    def __init__(self, roots, data_type, data_category, **kwargs):
+        super().__init__(roots, data_type, data_category, **kwargs)
         self.captions = {}
         for instance in self.instances:
             sha256 = instance[1]
-            self.captions[sha256] = json.loads(self.metadata.loc[sha256]['captions'])
+            # print("sha256", sha256)
+            # self.captions[sha256] = json.loads(self.metadata.loc[sha256]['captions'])
+            self.captions[sha256] = ''
     
     def filter_metadata(self, metadata):
         metadata, stats = super().filter_metadata(metadata)
@@ -153,7 +155,10 @@ class CustomTextConditionedMixin:
     
     def get_instance(self, root, instance):
         pack = super().get_instance(root, instance)
-        text = np.random.choice(self.captions[instance])
+        # print("INSTANCE", instance)
+        # text = np.random.choice(self.captions[instance])
+        text = self.captions[instance]
+        # print("TEXT", text)
         pack['cond'] = text
         return pack
     
@@ -206,9 +211,9 @@ class ImageConditionedMixin:
 
 
 class CustomImageConditionedMixin:
-    def __init__(self, roots, *, image_size=518, **kwargs):
+    def __init__(self, roots, data_type, data_category, *, image_size=518, **kwargs):
         self.image_size = image_size
-        super().__init__(roots, **kwargs)
+        super().__init__(roots, data_type, data_category, **kwargs)
     
     def filter_metadata(self, metadata):
         metadata, stats = super().filter_metadata(metadata)

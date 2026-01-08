@@ -24,10 +24,10 @@
     "dataset": {
         "name": "CustomTextConditionedSLat",
         "type": "gobjaverse",
-        "category": "Animals_subset",
-        "data_path": "/root/node2/data3/shape-generation/gobjaverse/trellis_custom/slat_gobjaverse_280k_category",
+        "category": "Food",
+        "data_path": "/root/node3/data2/shape-generation/gobjaverse/trellis_custom/slat_gobjaverse_280k_category",
         "args": {
-            "latent_model": "dinov2_vitl14_reg_slat_vae_gs_300k_b2x4_gobjaverse_animals_subset_20251109_020403_step0300000",
+            "latent_model": "dinov2_vitl14_reg_slat_vae_gs_300k_b2x4_gobjaverse_food_20251109_021142_step0300000",
             "min_aesthetic_score": 4.5,
             "max_num_voxels": 32768,
             "normalization": {
@@ -52,7 +52,7 @@
                     2.684523105621338
                 ]
             },
-            "slat_dec_path": "/root/node2/data3/shape-generation/TRELLIS/outputs/trellis_slat_vae/slat_vae_gs_300k_b2x4_gobjaverse_animals_subset_20251109_020403",
+            "slat_dec_path": "/root/node3/data2/shape-generation/TRELLIS/outputs/trellis_slat_vae/slat_vae_gs_300k_b2x4_gobjaverse_food_20251109_021142",
             "slat_dec_ckpt": "step0300000",
             "pretrained_slat_dec": "microsoft/TRELLIS-image-large/ckpts/slat_dec_gs_swin8_B_64l8gs32_fp16"
         }
@@ -106,7 +106,7 @@
             "wandb_config": {
                 "use_wandb": true,
                 "project": "trellis_slat_flow", 
-                "name": "slat_flow_txt_500k_b4x4_gobjaverse_animals_subset",
+                "name": "slat_flow_txt_500k_b4x4_gobjaverse_food",
                 "mode": "online"
             }
         }

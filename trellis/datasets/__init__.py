@@ -19,9 +19,9 @@ __attributes = {
     'SLat': 'structured_latent',
     'CustomSLat': 'custom_structured_latent',
     'TextConditionedSLat': 'structured_latent',
-    'CustomTextConditionedSLat': 'custom_structured_slat',
+    'CustomTextConditionedSLat': 'custom_structured_latent',
     'ImageConditionedSLat': 'structured_latent',
-    'CustomImageConditionedSLat': 'custom_structured_slat',
+    'CustomImageConditionedSLat': 'custom_structured_latent',
 }
 
 __submodules = []

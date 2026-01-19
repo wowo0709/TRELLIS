@@ -9,7 +9,7 @@ from . import samplers
 from ..modules import sparse as sp
 
 
-class TrellisUncond3DPipeline(Pipeline):
+class TrellisTextUncond3DPipeline(Pipeline):
     """
     Pipeline for inferring Trellis text-to-3D models.
 
@@ -26,6 +26,7 @@ class TrellisUncond3DPipeline(Pipeline):
         sparse_structure_sampler: samplers.Sampler = None,
         slat_sampler: samplers.Sampler = None,
         slat_normalization: dict = None,
+        text_cond_model: str = None,
     ):
         if models is None:
             return
@@ -35,17 +36,18 @@ class TrellisUncond3DPipeline(Pipeline):
         self.sparse_structure_sampler_params = {}
         self.slat_sampler_params = {}
         self.slat_normalization = slat_normalization
+        self._init_text_cond_model(text_cond_model)
 
     @staticmethod
-    def from_pretrained(path: str) -> "TrellisUncond3DPipeline":
+    def from_pretrained(path: str) -> "TrellisTextUncond3DPipeline":
         """
         Load a pretrained model.
 
         Args:
             path (str): The path to the model. Can be either local path or a Hugging Face repository.
         """
-        pipeline = super(TrellisUncond3DPipeline, TrellisUncond3DPipeline).from_pretrained(path)
-        new_pipeline = TrellisUncond3DPipeline()
+        pipeline = super(TrellisTextUncond3DPipeline, TrellisTextUncond3DPipeline).from_pretrained(path)
+        new_pipeline = TrellisTextUncond3DPipeline()
         new_pipeline.__dict__ = pipeline.__dict__
         args = pipeline._pretrained_args
 
@@ -57,17 +59,65 @@ class TrellisUncond3DPipeline(Pipeline):
 
         new_pipeline.slat_normalization = args['slat_normalization']
 
+        new_pipeline._init_text_cond_model(args['text_cond_model'])
+
         return new_pipeline
+    
+    def _init_text_cond_model(self, name: str):
+        """
+        Initialize the text conditioning model.
+        """
+        # load model
+        model = CLIPTextModel.from_pretrained(name)
+        tokenizer = AutoTokenizer.from_pretrained(name)
+        model.eval()
+        model = model.cuda()
+        self.text_cond_model = {
+            'model': model,
+            'tokenizer': tokenizer,
+        }
+        self.text_cond_model['null_cond'] = self.encode_text([''])
+
+    @torch.no_grad()
+    def encode_text(self, text: List[str]) -> torch.Tensor:
+        """
+        Encode the text.
+        """
+        assert isinstance(text, list) and all(isinstance(t, str) for t in text), "text must be a list of strings"
+        encoding = self.text_cond_model['tokenizer'](text, max_length=77, padding='max_length', truncation=True, return_tensors='pt')
+        tokens = encoding['input_ids'].cuda()
+        embeddings = self.text_cond_model['model'](input_ids=tokens).last_hidden_state
+        
+        return embeddings
+        
+    def get_cond(self, prompt: List[str]) -> dict:
+        """
+        Get the conditioning information for the model.
+
+        Args:
+            prompt (List[str]): The text prompt.
+
+        Returns:
+            dict: The conditioning information
+        """
+        cond = self.encode_text(prompt)
+        # neg_cond = self.text_cond_model['null_cond']
+        return {
+            'cond': cond,
+            # 'neg_cond': neg_cond,
+        }
 
     def sample_sparse_structure(
         self,
+        cond: dict,
         num_samples: int = 1,
         sampler_params: dict = {},
     ) -> torch.Tensor:
         """
-        Sample sparse structures.
+        Sample sparse structures with the given conditioning.
         
         Args:
+            cond (dict): The conditioning information.
             num_samples (int): The number of samples to generate.
             sampler_params (dict): Additional parameters for the sampler.
         """
@@ -79,9 +129,9 @@ class TrellisUncond3DPipeline(Pipeline):
         z_s = self.sparse_structure_sampler.sample(
             flow_model,
             noise,
+            **cond,
             **sampler_params,
-            verbose=True, 
-            cond="null"
+            verbose=True
         ).samples
         
         # Decode occupancy latent
@@ -116,13 +166,15 @@ class TrellisUncond3DPipeline(Pipeline):
     
     def sample_slat(
         self,
+        cond: dict,
         coords: torch.Tensor,
         sampler_params: dict = {},
     ) -> sp.SparseTensor:
         """
-        Sample structured latent.
+        Sample structured latent with the given conditioning.
         
         Args:
+            cond (dict): The conditioning information.
             coords (torch.Tensor): The coordinates of the sparse structure.
             sampler_params (dict): Additional parameters for the sampler.
         """
@@ -136,6 +188,7 @@ class TrellisUncond3DPipeline(Pipeline):
         slat = self.slat_sampler.sample(
             flow_model,
             noise,
+            **cond,
             **sampler_params,
             verbose=True
         ).samples
@@ -149,6 +202,7 @@ class TrellisUncond3DPipeline(Pipeline):
     @torch.no_grad()
     def run(
         self,
+        prompt: str = "null",
         num_samples: int = 1,
         seed: int = 42,
         sparse_structure_sampler_params: dict = {},
@@ -159,53 +213,36 @@ class TrellisUncond3DPipeline(Pipeline):
         Run the pipeline.
 
         Args:
+            prompt (str): The text prompt.
             num_samples (int): The number of samples to generate.
             seed (int): The random seed.
             sparse_structure_sampler_params (dict): Additional parameters for the sparse structure sampler.
             slat_sampler_params (dict): Additional parameters for the structured latent sampler.
             formats (List[str]): The formats to decode the structured latent to.
         """
+        cond = self.get_cond([prompt])
         torch.manual_seed(seed)
-        coords = self.sample_sparse_structure(num_samples, sparse_structure_sampler_params)
-        slat = self.sample_slat(coords, slat_sampler_params)
+        coords = self.sample_sparse_structure(cond, num_samples, sparse_structure_sampler_params)
+        slat = self.sample_slat(cond, coords, slat_sampler_params)
         return self.decode_slat(slat, formats)
     
-    def voxelize(self, mesh: o3d.geometry.TriangleMesh, min_bound: Sequence[float], max_bound: Sequence[float], resolution: Optional[int] = 64) -> torch.Tensor:
+    def voxelize(self, mesh: o3d.geometry.TriangleMesh) -> torch.Tensor:
         """
         Voxelize a mesh.
 
         Args:
             mesh (o3d.geometry.TriangleMesh): The mesh to voxelize.
+            sha256 (str): The SHA256 hash of the mesh.
+            output_dir (str): The output directory.
         """
         vertices = np.asarray(mesh.vertices)
-    
-        # --- normalize vertices to [min_bound, max_bound] range ---
         aabb = np.stack([vertices.min(0), vertices.max(0)])
         center = (aabb[0] + aabb[1]) / 2
         scale = (aabb[1] - aabb[0]).max()
-        
-        # 기존엔 [-0.5, 0.5]로 normalize 했지만,
-        # 이제는 [min_bound, max_bound] 범위로 선형 매핑
-        min_bound = np.array(min_bound, dtype=np.float32)
-        max_bound = np.array(max_bound, dtype=np.float32)
-        extent = max_bound - min_bound
-        
-        # 기존 object를 [-0.5, 0.5] 범위에서 min_bound~max_bound로 이동시킴
-        vertices = (vertices - center) / scale                  # [-0.5, 0.5] 범위 normalize
-        vertices = (vertices + 0.5) * extent + min_bound        # → [min_bound, max_bound]
-        
+        vertices = (vertices - center) / scale
+        vertices = np.clip(vertices, -0.5 + 1e-6, 0.5 - 1e-6)
         mesh.vertices = o3d.utility.Vector3dVector(vertices)
-
-        # --- voxelization ---
-        # 이제 voxelization도 world-space bound를 직접 지정
-        voxel_grid = o3d.geometry.VoxelGrid.create_from_triangle_mesh_within_bounds(
-            mesh,
-            voxel_size=(extent.max() / resolution),   # 상대적 voxel 크기 (resolution 맞추기)
-            min_bound=min_bound.tolist(),
-            max_bound=max_bound.tolist()
-        )
-
-        # --- voxel indices 반환 ---
+        voxel_grid = o3d.geometry.VoxelGrid.create_from_triangle_mesh_within_bounds(mesh, voxel_size=1/64, min_bound=(-0.5, -0.5, -0.5), max_bound=(0.5, 0.5, 0.5))
         vertices = np.array([voxel.grid_index for voxel in voxel_grid.get_voxels()])
         return torch.tensor(vertices).int().cuda()
 
@@ -213,6 +250,7 @@ class TrellisUncond3DPipeline(Pipeline):
     def run_variant(
         self,
         mesh: o3d.geometry.TriangleMesh,
+        prompt: str,
         num_samples: int = 1,
         seed: int = 42,
         slat_sampler_params: dict = {},
@@ -223,16 +261,18 @@ class TrellisUncond3DPipeline(Pipeline):
 
         Args:
             mesh (o3d.geometry.TriangleMesh): The base mesh.
+            prompt (str): The text prompt.
             num_samples (int): The number of samples to generate.
             seed (int): The random seed
             slat_sampler_params (dict): Additional parameters for the structured latent sampler.
             formats (List[str]): The formats to decode the structured latent to.
         """
+        cond = self.get_cond([prompt])
         coords = self.voxelize(mesh)
         coords = torch.cat([
             torch.arange(num_samples).repeat_interleave(coords.shape[0], 0)[:, None].int().cuda(),
             coords.repeat(num_samples, 1)
         ], 1)
         torch.manual_seed(seed)
-        slat = self.sample_slat(coords, slat_sampler_params)
+        slat = self.sample_slat(cond, coords, slat_sampler_params)
         return self.decode_slat(slat, formats)

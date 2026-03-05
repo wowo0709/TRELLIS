@@ -293,11 +293,10 @@ if __name__ == "__main__":
 
 
 """
-python voxelize_pointcloud.py \
-  --input_root /data/ShapeNet_pcs \
-  --output_root /data/ShapeNet_vox64_world \
-  --structure shapenet \
-  --category chair \
-  --scale 0.55 \
-  --resolution 64
+python dataset_toolkits/voxelize_pointcloud.py \
+    --input_root /root/data/shape-generation/3D-FRONT/3D-FRONT-processed_bedroom-noair/bedrooms_without_lamps_full_colored_pcs \
+    --output_root /root/data/shape-generation/3D-FRONT/trellis_tmlr/bedrooms_without_lamps_full_voxelized_pcs \
+    --scale 3.0 \
+    --structure 3dfront \
+    --resolution 64
 """

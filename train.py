@@ -180,6 +180,6 @@ if __name__ == '__main__':
 """
 CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7 python train.py \
     --config configs/generation/ss_flow_txt_dit_B_16l8_fp16_3dfront.json \
-    --output_dir /root/node1/data3/shape-generation/TRELLIS/outputs \
+    --output_dir /root/data/shape-generation/TRELLIS/outputs \
     --num_gpus 4
 """

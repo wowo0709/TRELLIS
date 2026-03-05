@@ -4,7 +4,7 @@
             "name": "SparseStructureEncoder",
             "args": {
                 "in_channels": 1,
-                "latent_channels": 8,
+                "latent_channels": 4,
                 "num_res_blocks": 2,
                 "num_res_blocks_middle": 2,
                 "channels": [32, 128, 512],
@@ -15,7 +15,7 @@
             "name": "SparseStructureDecoder",
             "args": {
                 "out_channels": 1,
-                "latent_channels": 8,
+                "latent_channels": 4,
                 "num_res_blocks": 2,
                 "num_res_blocks_middle": 2,
                 "channels": [512, 128, 32],
@@ -27,7 +27,7 @@
         "name": "CustomSparseStructure",
         "type": "3dfront",
         "category": "bedrooms",
-        "data_path": "/root/node1/data3/shape-generation/3D-FRONT/3D-FRONT-processed_bedroom-noair/trellis/bedrooms_without_lamps_full_voxelized_pcs/images_256_zuniform-h3-r5_noair",
+        "data_path": "/root/data/shape-generation/3D-FRONT/trellis_tmlr/bedrooms_without_lamps_full_voxelized_pcs/images_256_zuniform-h3-r5_noair",
         "args": {
             "resolution": 64,
             "min_aesthetic_score": 4.5, 
@@ -63,6 +63,7 @@
             "i_log": 1000,
             "i_sample": 10000,
             "i_save": 20000,
+            "enable_snapshot": false,
             "loss_type": "dice",
             "lambda_kl": 0.001, 
             "wandb_config": {

@@ -5,6 +5,18 @@ from . import BACKEND, DEBUG
 SparseTensorData = None # Lazy import
 
 
+def _ensure_sparse_tensor_data():
+    """Lazy-load backend SparseTensor class for code paths that bypass __init__ (e.g., unpickled objects)."""
+    global SparseTensorData
+    if SparseTensorData is None:
+        import importlib
+        if BACKEND == 'torchsparse':
+            SparseTensorData = importlib.import_module('torchsparse').SparseTensor
+        elif BACKEND == 'spconv':
+            SparseTensorData = importlib.import_module('spconv.pytorch').SparseConvTensor
+    return SparseTensorData
+
+
 __all__ = [
     'SparseTensor',
     'sparse_batch_broadcast',
@@ -37,13 +49,7 @@ class SparseTensor:
 
     def __init__(self, *args, **kwargs):
         # Lazy import of sparse tensor backend
-        global SparseTensorData
-        if SparseTensorData is None:
-            import importlib
-            if BACKEND == 'torchsparse':
-                SparseTensorData = importlib.import_module('torchsparse').SparseTensor
-            elif BACKEND == 'spconv':
-                SparseTensorData = importlib.import_module('spconv.pytorch').SparseConvTensor
+        _ensure_sparse_tensor_data()
                 
         method_id = 0
         if len(args) != 0:
@@ -241,6 +247,7 @@ class SparseTensor:
         return sparse_unbind(self, dim)
 
     def replace(self, feats: torch.Tensor, coords: Optional[torch.Tensor] = None) -> 'SparseTensor':
+        _ensure_sparse_tensor_data()
         new_shape = [self.shape[0]]
         new_shape.extend(feats.shape[1:])
         if BACKEND == 'torchsparse':

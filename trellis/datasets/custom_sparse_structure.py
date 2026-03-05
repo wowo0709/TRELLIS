@@ -76,11 +76,21 @@ class CustomSparseStructure(CustomStandardDatasetBase):
     @torch.no_grad()
     def visualize_sample(self, ss: Union[torch.Tensor, dict]):
         ss = ss if isinstance(ss, torch.Tensor) else ss['ss']
-        
+
+        # Scale camera and clipping with dataset AABB. Fixed unit-scene settings
+        # can explode rasterizer memory when the world box is much larger.
+        aabb_min = torch.tensor(self.aabb[:3], dtype=torch.float32, device='cuda')
+        aabb_size = torch.tensor(self.aabb[3:], dtype=torch.float32, device='cuda')
+        aabb_center = aabb_min + 0.5 * aabb_size
+        scene_extent = float(torch.max(aabb_size).item())
+        cam_radius = max(2.0, scene_extent * 2.0)
+        near = max(0.01, cam_radius - scene_extent * 1.25)
+        far = cam_radius + scene_extent * 1.25
+
         renderer = OctreeRenderer()
         renderer.rendering_options.resolution = 512
-        renderer.rendering_options.near = 0.8
-        renderer.rendering_options.far = 1.6
+        renderer.rendering_options.near = near
+        renderer.rendering_options.far = far
         renderer.rendering_options.bg_color = (0, 0, 0)
         renderer.rendering_options.ssaa = 4
         renderer.pipe.primitive = 'voxel'
@@ -94,13 +104,18 @@ class CustomSparseStructure(CustomStandardDatasetBase):
         exts = []
         ints = []
         for yaw, pitch in zip(yaws, pitch):
-            orig = torch.tensor([
+            direction = torch.tensor([
                 np.sin(yaw) * np.cos(pitch),
                 np.cos(yaw) * np.cos(pitch),
                 np.sin(pitch),
-            ]).float().cuda() * 2
+            ]).float().cuda()
+            orig = aabb_center + direction * cam_radius
             fov = torch.deg2rad(torch.tensor(30)).cuda()
-            extrinsics = utils3d.torch.extrinsics_look_at(orig, torch.tensor([0, 0, 0]).float().cuda(), torch.tensor([0, 0, 1]).float().cuda())
+            extrinsics = utils3d.torch.extrinsics_look_at(
+                orig,
+                aabb_center,
+                torch.tensor([0, 0, 1]).float().cuda()
+            )
             intrinsics = utils3d.torch.intrinsics_from_fov_xy(fov, fov)
             exts.append(extrinsics)
             ints.append(intrinsics)

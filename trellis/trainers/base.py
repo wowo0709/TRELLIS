@@ -102,6 +102,7 @@ class Trainer:
         i_sample=10000,
         i_save=10000,
         i_ddpcheck=10000,
+        enable_snapshot=True,
         wandb_config={},
         **kwargs
     ):
@@ -129,6 +130,7 @@ class Trainer:
         self.i_sample = i_sample
         self.i_save = i_save
         self.i_ddpcheck = i_ddpcheck    
+        self.enable_snapshot = enable_snapshot
         self.wandb_config = wandb_config
 
         if dist.is_initialized():
@@ -414,11 +416,15 @@ class Trainer:
         """
         if self.is_master:
             print('\nStarting training...')
-            self.snapshot_dataset()
-        if self.step == 0:
-            self.snapshot(suffix='init')
-        else: # resume
-            self.snapshot(suffix=f'resume_step{self.step:07d}')
+            if self.enable_snapshot:
+                self.snapshot_dataset()
+            else:
+                print('Snapshot is disabled. Skipping dataset/init visualization.')
+        if self.enable_snapshot:
+            if self.step == 0:
+                self.snapshot(suffix='init')
+            else: # resume
+                self.snapshot(suffix=f'resume_step{self.step:07d}')
 
         log = []
         time_last_print = 0.0
@@ -453,7 +459,7 @@ class Trainer:
                 self.check_ddp()
 
             # Sample images
-            if self.step % self.i_sample == 0:
+            if self.enable_snapshot and self.step % self.i_sample == 0:
                 self.snapshot()
 
             if self.is_master:

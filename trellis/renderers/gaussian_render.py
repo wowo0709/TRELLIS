@@ -11,6 +11,7 @@
 
 import torch
 import math
+import re
 from easydict import EasyDict as edict
 import numpy as np
 from ..representations.gaussian import Gaussian
@@ -190,6 +191,38 @@ class GaussianRenderer:
         near = self.rendering_options["near"]
         far = self.rendering_options["far"]
         ssaa = self.rendering_options["ssaa"]
+
+        # Guard invalid camera tensors before hitting CUDA rasterizer kernels.
+        if not torch.isfinite(extrinsics).all() or not torch.isfinite(intrinsics).all():
+            empty = torch.zeros((3, resolution, resolution), dtype=torch.float32, device="cuda")
+            return edict({'color': empty})
+
+        # Guard invalid/empty Gaussian parameters that can trigger catastrophic
+        # buffer size computation in diff_gaussian_rasterization.
+        if gausssian._xyz is None or gausssian._xyz.shape[0] == 0:
+            empty = torch.zeros((3, resolution, resolution), dtype=torch.float32, device="cuda")
+            return edict({'color': empty})
+        valid = torch.isfinite(gausssian._xyz).all(dim=1)
+        valid = valid & torch.isfinite(gausssian._scaling).all(dim=1)
+        valid = valid & torch.isfinite(gausssian._rotation).all(dim=1)
+        valid = valid & torch.isfinite(gausssian._opacity).all(dim=1)
+        valid = valid & torch.isfinite(gausssian._features_dc).all(dim=(1, 2))
+        if colors_overwrite is not None:
+            valid = valid & torch.isfinite(colors_overwrite).all(dim=1)
+        if valid.sum().item() == 0:
+            empty = torch.zeros((3, resolution, resolution), dtype=torch.float32, device="cuda")
+            return edict({'color': empty})
+        if valid.sum().item() != valid.numel():
+            filtered = Gaussian(**gausssian.init_params)
+            filtered._xyz = gausssian._xyz[valid]
+            filtered._features_dc = gausssian._features_dc[valid]
+            filtered._features_rest = gausssian._features_rest[valid] if gausssian._features_rest is not None else None
+            filtered._scaling = gausssian._scaling[valid]
+            filtered._rotation = gausssian._rotation[valid]
+            filtered._opacity = gausssian._opacity[valid]
+            gausssian = filtered
+            if colors_overwrite is not None:
+                colors_overwrite = colors_overwrite[valid]
         
         if self.rendering_options["bg_color"] == 'random':
             self.bg_color = torch.zeros(3, dtype=torch.float32, device="cuda")
@@ -199,10 +232,13 @@ class GaussianRenderer:
             self.bg_color = torch.tensor(self.rendering_options["bg_color"], dtype=torch.float32, device="cuda")
 
         view = extrinsics
+        # Keep projection numerically stable.
+        near = float(max(1e-3, near))
+        far = float(max(near + 1e-3, far))
         perspective = intrinsics_to_projection(intrinsics, near, far)
         camera = torch.inverse(view)[:3, 3]
-        focalx = intrinsics[0, 0]
-        focaly = intrinsics[1, 1]
+        focalx = torch.clamp(intrinsics[0, 0], min=1e-3)
+        focaly = torch.clamp(intrinsics[1, 1], min=1e-3)
         fovx = 2 * torch.atan(0.5 / focalx)
         fovy = 2 * torch.atan(0.5 / focaly)
             
@@ -220,7 +256,31 @@ class GaussianRenderer:
         })
 
         # Render
-        render_ret = render(camera_dict, gausssian, self.pipe, self.bg_color, override_color=colors_overwrite, scaling_modifier=self.pipe.scale_modifier)
+        try:
+            render_ret = render(
+                camera_dict,
+                gausssian,
+                self.pipe,
+                self.bg_color,
+                override_color=colors_overwrite,
+                scaling_modifier=self.pipe.scale_modifier
+            )
+        except (torch.OutOfMemoryError, RuntimeError) as e:
+            # Some malformed camera/gaussian states in data can trigger
+            # pathological allocator requests (e.g., tens of millions GiB).
+            # Drop only those pathological samples instead of killing training.
+            msg = str(e)
+            m = re.search(r"Tried to allocate\s+([0-9][0-9,\.\s]*)\s+GiB", msg)
+            alloc_gib = None
+            if m is not None:
+                try:
+                    alloc_gib = float(m.group(1).replace(",", "").replace(" ", ""))
+                except ValueError:
+                    alloc_gib = None
+            if alloc_gib is not None and alloc_gib > 10000.0:
+                empty = torch.zeros((3, resolution, resolution), dtype=torch.float32, device="cuda")
+                return edict({'color': empty})
+            raise
 
         if ssaa > 1:
             render_ret.render = F.interpolate(render_ret.render[None], size=(resolution, resolution), mode='bilinear', align_corners=False, antialias=True).squeeze()

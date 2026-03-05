@@ -85,9 +85,16 @@ class SLatVaeGaussianTrainer(BasicTrainer):
         self.lpips_metric = LearnedPerceptualImagePatchSimilarity(net_type="alex").to(self.device)
         
     def _init_renderer(self):
-        rendering_options = {"near" : 0.8,
-                             "far" : 1.6,
-                             "bg_color" : 'random'}
+        # Avoid an overly tight clipping range. In 3D-FRONT world-scale scenes,
+        # a narrow [0.8, 1.6] range can trigger unstable rasterizer behavior.
+        rep_cfg = getattr(self.models['decoder'], 'rep_config', {}) or {}
+        aabb = rep_cfg.get('aabb', [-0.5, -0.5, -0.5, 1.0, 1.0, 1.0])
+        scene_extent = max(float(aabb[3]), float(aabb[4]), float(aabb[5]))
+        rendering_options = {
+            "near": max(0.01, scene_extent * 0.02),
+            "far": max(2.0, scene_extent * 8.0),
+            "bg_color": 'random',
+        }
         self.renderer = GaussianRenderer(rendering_options)
         self.renderer.pipe.kernel_size = self.models['decoder'].rep_config['2d_filter_kernel_size']
         

@@ -97,12 +97,13 @@ class Trainer:
         finetune_ckpt=None,
         log_param_stats=False,
         prefetch_data=True,
+        num_workers=None,
         i_print=1000,
         i_log=500,
         i_sample=10000,
         i_save=10000,
         i_ddpcheck=10000,
-        enable_snapshot=True,
+        enable_snapshot=False,
         wandb_config={},
         **kwargs
     ):
@@ -121,6 +122,11 @@ class Trainer:
         self.fp16_scale_growth = fp16_scale_growth
         self.log_param_stats = log_param_stats
         self.prefetch_data = prefetch_data
+        if num_workers is None:
+            # Default can explode in multi-process DDP on high-core machines.
+            self.num_workers = int(np.ceil(os.cpu_count() / max(torch.cuda.device_count(), 1)))
+        else:
+            self.num_workers = int(num_workers)
         if self.prefetch_data:
             self._data_prefetched = None
 
@@ -204,10 +210,10 @@ class Trainer:
         self.dataloader = DataLoader(
             self.dataset,
             batch_size=self.batch_size_per_gpu,
-            num_workers=int(np.ceil(os.cpu_count() / torch.cuda.device_count())),
+            num_workers=self.num_workers,
             pin_memory=True,
             drop_last=True,
-            persistent_workers=True,
+            persistent_workers=self.num_workers > 0,
             collate_fn=self.dataset.collate_fn if hasattr(self.dataset, 'collate_fn') else None,
             sampler=self.data_sampler,
         )
@@ -546,7 +552,8 @@ class Trainer:
                     self.save()
 
         if self.is_master:
-            self.snapshot(suffix='final')
+            if self.enable_snapshot:
+                self.snapshot(suffix='final')
             self.writer.close()
             print('Training finished.')
             

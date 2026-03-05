@@ -63,6 +63,7 @@
             "max_steps": 500000,
             "batch_size_per_gpu": 4,
             "batch_split": 4,
+            "num_workers": 4,
             "optimizer": {
                 "name": "AdamW",
                 "args": {
@@ -93,6 +94,7 @@
             "i_log": 1000,
             "i_sample": 10000,
             "i_save": 20000,
+            "enable_snapshot": false,
             "p_uncond": 1.1,
             "t_schedule": {
                 "name": "logitNormal",

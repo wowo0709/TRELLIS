@@ -21,17 +21,23 @@ torch.set_grad_enabled(False)
 # ------------------------------
 # Utility: Read voxel centers
 # ------------------------------
-def get_voxels_from_ply(ply_path: str, resolution: int) -> torch.Tensor:
+def get_voxels_from_ply(ply_path: str, resolution: int, scale: float = 0.5) -> torch.Tensor:
     """
-    Read voxel centers (in [-0.5,0.5]^3) from PLY and build a dense occupancy grid.
+    Read voxel centers from PLY and build a dense occupancy grid.
+    World bounds are interpreted as [-scale, scale]^3.
 
     Returns:
         ss: LongTensor of shape (1, R, R, R) with 1 at occupied cells.
     """
-    pos = utils3d.io.read_ply(ply_path)[0].astype(np.float32)
-    pos = np.clip(pos, -0.5 + 1e-6, 0.5 - 1e-6)
+    if scale <= 0:
+        raise ValueError("scale must be positive.")
 
-    coords = ((torch.tensor(pos) + 0.5) * resolution).long()
+    pos = utils3d.io.read_ply(ply_path)[0].astype(np.float32)
+    min_xyz = -float(scale)
+    max_xyz = float(scale)
+    pos = np.clip(pos, min_xyz + 1e-6, max_xyz - 1e-6)
+
+    coords = ((torch.tensor(pos) - min_xyz) * resolution / (max_xyz - min_xyz)).long()
     coords = torch.clamp(coords, 0, resolution - 1)
 
     ss = torch.zeros(1, resolution, resolution, resolution, dtype=torch.long)
@@ -184,6 +190,8 @@ def main():
                         help="Output root for ss_latents/")
     parser.add_argument("--resolution", type=int, default=64,
                         help="Voxel grid resolution (default=64)")
+    parser.add_argument("--scale", type=float, default=0.5,
+                        help="World half-extent for voxel mapping. Bounds are [-scale, scale]^3.")
 
     # model loading
     parser.add_argument("--enc_pretrained", type=str,
@@ -214,6 +222,7 @@ def main():
     # Model
     encoder, latent_name = load_encoder(opt)
     encoder = encoder.to(device).eval()
+    print(f"Voxel mapping bounds: [-{opt.scale}, {opt.scale}]^3")
 
     # Detect structure
     if opt.structure == "auto":
@@ -247,7 +256,7 @@ def main():
 
     def loader(cat, subcat, inst, ply_path):
         try:
-            ss = get_voxels_from_ply(ply_path, opt.resolution)[None].float()
+            ss = get_voxels_from_ply(ply_path, opt.resolution, scale=opt.scale)[None].float()
             load_q.put((cat, subcat, inst, ss), block=True)
         except Exception as e:
             print(f"[LoadError] {cat or '-'} / {subcat or '-'} / {inst}: {e}")
@@ -316,5 +325,6 @@ python dataset_toolkits/encode_ss_latent_custom.py \
     --ckpt step0300000 \
     --structure 3dfront \
     --resolution 64 \
+    --scale 3.0 \
     --gpu 0
 """

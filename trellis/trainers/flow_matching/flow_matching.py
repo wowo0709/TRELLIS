@@ -256,8 +256,10 @@ class FlowMatchingTrainer(BasicTrainer):
                 for i in range(num_images):
                     gt_occ = x_dec_gt[i, 0] > 0
                     pred_occ = x_dec_pred[i, 0] > 0
-                    img_dict[f'voxel/gt_{i:02d}'] = self._voxel_plot_tensor(gt_occ, title=f'GT {i}')
-                    img_dict[f'voxel/pred_{i:02d}'] = self._voxel_plot_tensor(pred_occ, title=f'Pred {i}')
+                    gt_img = self._voxel_plot_tensor(gt_occ, title=f'GT {i}')
+                    pred_img = self._voxel_plot_tensor(pred_occ, title=f'Pred {i}')
+                    compare = torch.cat([gt_img, pred_img], dim=3)
+                    img_dict[f'voxel/compare_{i:02d}'] = compare
                 self._voxel_logged_step = self.step
             except Exception as e:
                 if not self._voxel_log_warned:

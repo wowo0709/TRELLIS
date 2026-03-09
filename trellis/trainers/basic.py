@@ -343,6 +343,7 @@ class BasicTrainer(Trainer):
         Run a training step.
         """
         step_log = {'loss': {}, 'status': {}}
+        img_dict = None
         amp_context = partial(torch.autocast, device_type='cuda') if self.fp16_mode == 'amp' else nullcontext
         elastic_controller_context = self.elastic_controller.record if self.elastic_controller_config is not None else nullcontext
 
@@ -359,9 +360,10 @@ class BasicTrainer(Trainer):
                     ret = self.training_losses(**mb_data)
                     if len(ret) == 2:
                         loss, status = ret
-                        img_dict = None
                     elif len(ret) == 3:
-                        loss, status, img_dict = ret
+                        loss, status, img_dict_mb = ret
+                        if img_dict_mb is not None:
+                            img_dict = img_dict_mb
                         # [1, 3, H, W], torch.float32, [0, 1]
                         # print("\n", 'rec_image', img_dict['rec_image'].shape, img_dict['rec_image'].dtype, img_dict['rec_image'].min(), img_dict['rec_image'].max(), sep="\n")
                         # print("\n", 'gt_image', img_dict['gt_image'].shape, img_dict['gt_image'].dtype, img_dict['gt_image'].min(), img_dict['gt_image'].max(), sep="\n")

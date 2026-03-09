@@ -1,10 +1,12 @@
 from typing import *
 import copy
+import io
 import torch
 import torch.nn.functional as F
 from torch.utils.data import DataLoader
 import numpy as np
 from easydict import EasyDict as edict
+from PIL import Image
 
 from ..basic import BasicTrainer
 from ...pipelines import samplers 
@@ -60,11 +62,56 @@ class FlowMatchingTrainer(BasicTrainer):
             }
         },
         sigma_min: float = 1e-5,
+        log_voxel_to_wandb: bool = False,
+        voxel_log_num_images: int = 1,
         **kwargs
     ):
         super().__init__(*args, **kwargs)
         self.t_schedule = t_schedule
         self.sigma_min = sigma_min
+        self.log_voxel_to_wandb = log_voxel_to_wandb
+        self.voxel_log_num_images = max(int(voxel_log_num_images), 1)
+        self._voxel_logged_step = -1
+        self._voxel_log_warned = False
+
+    @torch.no_grad()
+    def _voxel_plot_tensor(self, occ_grid: torch.Tensor, title: str = "") -> torch.Tensor:
+        """
+        Render a boolean voxel grid [D, H, W] to a 2D RGB image tensor [1, 3, H, W]
+        using matplotlib's 3D voxel plot.
+        """
+        import matplotlib
+        matplotlib.use("Agg", force=True)
+        import matplotlib.pyplot as plt
+
+        occ = occ_grid.detach().cpu().numpy().astype(bool)
+        fig = plt.figure(figsize=(5, 5), dpi=120)
+        ax = fig.add_subplot(111, projection='3d')
+        ax.voxels(
+            occ,
+            facecolors='#1f77b4',
+            edgecolor=None,
+            linewidth=0.0,
+            shade=True,
+        )
+        if title:
+            ax.set_title(title, fontsize=10)
+        ax.view_init(elev=25, azim=-55)
+
+        # Keep axis visible like a standard 3D plot.
+        ax.set_xlabel('x')
+        ax.set_ylabel('y')
+        ax.set_zlabel('z')
+
+        buf = io.BytesIO()
+        fig.tight_layout()
+        fig.savefig(buf, format='png')
+        plt.close(fig)
+        buf.seek(0)
+        img = Image.open(buf).convert('RGB')
+        img_np = np.array(img).astype(np.float32) / 255.0  # [H, W, 3]
+        img_t = torch.from_numpy(img_np).permute(2, 0, 1).unsqueeze(0).contiguous()  # [1, 3, H, W]
+        return img_t
 
     def diffuse(self, x_0: torch.Tensor, t: torch.Tensor, noise: Optional[torch.Tensor] = None) -> torch.Tensor:
         """
@@ -181,6 +228,45 @@ class FlowMatchingTrainer(BasicTrainer):
             if (time_bin == i).sum() != 0:
                 terms[f"bin_{i}"] = {"mse": mse_per_instance[time_bin == i].mean()}
 
+        img_dict = None
+        should_log_voxel = (
+            self.log_voxel_to_wandb
+            and self.is_master
+            and self.wandb_config.get("use_wandb", False)
+            and ((self.step + 1) % self.i_log == 0)
+            and self._voxel_logged_step != self.step
+        )
+        if should_log_voxel:
+            try:
+                num_images = min(self.voxel_log_num_images, x_0.shape[0])
+                x0_gt = x_0[:num_images].detach()
+                x0_pred = ((1 - self.sigma_min) * noise[:num_images] - pred[:num_images]).detach()
+
+                if not hasattr(self.dataset, 'decode_latent'):
+                    raise RuntimeError("Dataset does not provide decode_latent for voxel logging.")
+
+                # Decode once for both gt/pred to avoid loading decoder twice.
+                x_cat = torch.cat([x0_gt, x0_pred], dim=0)
+                x_dec = self.dataset.decode_latent(x_cat, batch_size=min(4, x_cat.shape[0]))
+                x_dec = x_dec.detach()
+                x_dec_gt = x_dec[:num_images]
+                x_dec_pred = x_dec[num_images:]
+
+                img_dict = {}
+                for i in range(num_images):
+                    gt_occ = x_dec_gt[i, 0] > 0
+                    pred_occ = x_dec_pred[i, 0] > 0
+                    img_dict[f'voxel/gt_{i:02d}'] = self._voxel_plot_tensor(gt_occ, title=f'GT {i}')
+                    img_dict[f'voxel/pred_{i:02d}'] = self._voxel_plot_tensor(pred_occ, title=f'Pred {i}')
+                self._voxel_logged_step = self.step
+            except Exception as e:
+                if not self._voxel_log_warned:
+                    print(f'\nWarning: voxel WandB logging failed once and will be skipped. ({e})')
+                    self._voxel_log_warned = True
+                self.log_voxel_to_wandb = False
+
+        if img_dict is not None:
+            return terms, {}, img_dict
         return terms, {}
     
     @torch.no_grad()

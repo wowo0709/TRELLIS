@@ -53,6 +53,19 @@ class SparseFlowMatchingTrainer(FlowMatchingTrainer):
         sigma_min (float): Minimum noise level.
     """
     
+    def __init__(
+        self,
+        *args,
+        log_slat_to_wandb: bool = False,
+        slat_log_num_images: int = 1,
+        **kwargs
+    ):
+        super().__init__(*args, **kwargs)
+        self.log_slat_to_wandb = log_slat_to_wandb
+        self.slat_log_num_images = max(int(slat_log_num_images), 1)
+        self._slat_logged_step = -1
+        self._slat_log_warned = False
+
     def prepare_dataloader(self, **kwargs):
         """
         Prepare dataloader.
@@ -71,10 +84,10 @@ class SparseFlowMatchingTrainer(FlowMatchingTrainer):
         self.dataloader = DataLoader(
             self.dataset,
             batch_size=self.batch_size_per_gpu,
-            num_workers=int(np.ceil(os.cpu_count() / torch.cuda.device_count())),
+            num_workers=self.num_workers,
             pin_memory=True,
             drop_last=True,
-            persistent_workers=True,
+            persistent_workers=self.num_workers > 0,
             collate_fn=functools.partial(self.dataset.collate_fn, split_size=self.batch_split),
             sampler=self.data_sampler,
         )
@@ -120,6 +133,41 @@ class SparseFlowMatchingTrainer(FlowMatchingTrainer):
             if (time_bin == i).sum() != 0:
                 terms[f"bin_{i}"] = {"mse": mse_per_instance[time_bin == i].mean()}
 
+        img_dict = None
+        should_log_slat = (
+            self.log_slat_to_wandb
+            and self.is_master
+            and self.wandb_config.get("use_wandb", False)
+            and ((self.step + 1) % self.i_log == 0)
+            and self._slat_logged_step != self.step
+        )
+        if should_log_slat:
+            try:
+                if not hasattr(self.dataset, 'visualize_sample'):
+                    raise RuntimeError("Dataset does not provide visualize_sample for SLAT logging.")
+
+                num_images = min(self.slat_log_num_images, x_0.shape[0])
+                x0_gt = x_0[:num_images].detach()
+                x0_pred = ((1 - self.sigma_min) * noise[:num_images] - pred[:num_images]).detach()
+
+                # Decode/render in one pass for consistent camera and reduced decoder loads.
+                vis_all = self.visualize_sample({'x_0': sp.sparse_cat([x0_gt, x0_pred])})
+                if isinstance(vis_all, torch.Tensor) and vis_all.shape[0] >= 2 * num_images:
+                    vis_gt = vis_all[:num_images]
+                    vis_pred = vis_all[num_images:2 * num_images]
+                    img_dict = {}
+                    for i in range(num_images):
+                        compare = torch.cat([vis_gt[i:i+1], vis_pred[i:i+1]], dim=3)
+                        img_dict[f'slat/compare_{i:02d}'] = compare
+                    self._slat_logged_step = self.step
+            except Exception as e:
+                if not self._slat_log_warned:
+                    print(f'\nWarning: SLAT WandB logging failed once and will be skipped. ({e})')
+                    self._slat_log_warned = True
+                self.log_slat_to_wandb = False
+
+        if img_dict is not None:
+            return terms, {}, img_dict
         return terms, {}
     
     @torch.no_grad()

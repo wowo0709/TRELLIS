@@ -65,11 +65,15 @@ class CustomSLatVisMixin:
         x_0 = x_0 if isinstance(x_0, SparseTensor) else x_0['x_0']
         reps = self.decode_latent(x_0.cuda())
         
-        # Build camera
+        # Build a stable random camera rig:
+        # keep broad azimuth coverage, but reduce extreme elevation and use a slightly wider FoV.
         yaws = [0, np.pi / 2, np.pi, 3 * np.pi / 2]
-        yaws_offset = np.random.uniform(-np.pi / 4, np.pi / 4)
+        yaws_offset = np.random.uniform(-np.pi / 8, np.pi / 8)
         yaws = [y + yaws_offset for y in yaws]
-        pitch = [np.random.uniform(-np.pi / 4, np.pi / 4) for _ in range(4)]
+        pitch = np.random.normal(loc=np.deg2rad(10.0), scale=np.deg2rad(7.0), size=4)
+        pitch = np.clip(pitch, np.deg2rad(-8.0), np.deg2rad(24.0)).tolist()
+        radius = float(np.clip(np.random.normal(loc=2.2, scale=0.15), 1.9, 2.5))
+        fov = torch.deg2rad(torch.tensor(50.0)).cuda()
 
         exts = []
         ints = []
@@ -78,8 +82,7 @@ class CustomSLatVisMixin:
                 np.sin(yaw) * np.cos(pitch),
                 np.cos(yaw) * np.cos(pitch),
                 np.sin(pitch),
-            ]).float().cuda() * 2
-            fov = torch.deg2rad(torch.tensor(40)).cuda()
+            ]).float().cuda() * radius
             extrinsics = utils3d.torch.extrinsics_look_at(orig, torch.tensor([0, 0, 0]).float().cuda(), torch.tensor([0, 0, 1]).float().cuda())
             intrinsics = utils3d.torch.intrinsics_from_fov_xy(fov, fov)
             exts.append(extrinsics)

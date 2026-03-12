@@ -12,6 +12,10 @@ import torch.multiprocessing as mp
 import numpy as np
 import random
 
+# spconv implicit_gemm path can crash with SIGFPE on some environments.
+# Keep user-provided value, but default to the stable native algo.
+os.environ.setdefault("SPCONV_ALGO", "native")
+
 from trellis import models, datasets, trainers
 from trellis.utils.dist_utils import find_free_port, setup_dist
 

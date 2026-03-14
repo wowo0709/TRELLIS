@@ -1,0 +1,122 @@
+{
+    "models": {
+        "denoiser": {
+            "name": "ElasticSLatFlowModel",
+            "args": {
+                "resolution": 64,
+                "in_channels": 4,
+                "out_channels": 4,
+                "model_channels": 768,
+                "cond_channels": 1024,
+                "num_blocks": 12,
+                "num_heads": 12,
+                "mlp_ratio": 4,
+                "patch_size": 2,
+                "num_io_res_blocks": 2,
+                "io_block_channels": [
+                    128
+                ],
+                "pe_mode": "ape",
+                "qk_rms_norm": true,
+                "use_fp16": true,
+                "use_context": true
+            }
+        }
+    },
+    "dataset": {
+        "name": "CustomImageConditionedSLat",
+        "type": "shapenet",
+        "category": "03001627",
+        "data_path": "/root/node1/data3/shape-generation/shapenetv1/trellis_tmlr/slat_uniform_light",
+        "args": {
+            "latent_model": "dinov2_vitl14_reg_slat_vae_gs_300k_b4x2_ch576_k4_shapenet_chair_20260308_074037_step0150000",
+            "min_aesthetic_score": 4.5,
+            "max_num_voxels": 32768,
+            "image_size": 518,
+            "image_root": "/root/node1/data3/shape-generation/shapenetv1/rendered_shapenet_uniform_light",
+            "image_folder": "rendered_images",
+            "condition_view_indices": [
+                0,
+                6,
+                12,
+                18
+            ],
+            "num_condition_views": 4,
+            "normalization": {
+                "mean": [
+                    1.2177893094189185,
+                    -0.7263971582605966,
+                    0.1801140552146646,
+                    2.1676424190630486
+                ],
+                "std": [
+                    3.2456745603959787,
+                    2.6289898143112578,
+                    3.6591236789408113,
+                    2.568523994372139
+                ]
+            },
+            "slat_dec_path": "/root/node1/data3/shape-generation/TRELLIS/outputs/trellis_slat_vae/slat_vae_gs_300k_b4x2_ch576_k4_shapenet_chair_20260308_074037",
+            "slat_dec_ckpt": "step0150000",
+            "pretrained_slat_dec": "microsoft/TRELLIS-image-large/ckpts/slat_dec_gs_swin8_B_64l8gs32_fp16"
+        }
+    },
+    "trainer": {
+        "name": "ImageConditionedSparseFlowMatchingCFGTrainer",
+        "args": {
+            "max_steps": 500000,
+            "batch_size_per_gpu": 2,
+            "batch_split": 2,
+            "num_workers": 2, 
+            "optimizer": {
+                "name": "AdamW",
+                "args": {
+                    "lr": 0.0001,
+                    "weight_decay": 0.0
+                }
+            },
+            "ema_rate": [
+                0.9999
+            ],
+            "fp16_mode": "inflat_all",
+            "fp16_scale_growth": 0.001,
+            "elastic": {
+                "name": "LinearMemoryController",
+                "args": {
+                    "target_ratio": 0.75,
+                    "max_mem_ratio_start": 0.5
+                }
+            },
+            "grad_clip": {
+                "name": "AdaptiveGradClipper",
+                "args": {
+                    "max_norm": 1.0,
+                    "clip_percentile": 95
+                }
+            },
+            "i_print": 10,
+            "i_log": 1000,
+            "i_sample": 10000,
+            "i_save": 50000,
+            "p_uncond": 0.1,
+            "enable_snapshot": false, 
+            "t_schedule": {
+                "name": "logitNormal",
+                "args": {
+                    "mean": 1.0,
+                    "std": 1.0
+                }
+            },
+            "sigma_min": 1e-05,
+            "image_cond_model": "dinov2_vitl14_reg",
+            "log_cond_images_to_wandb": true,
+            "cond_image_log_num_samples": 1,
+            "wandb_config": {
+                "use_wandb": true,
+                "project": "trellis_slat_flow",
+                "name": "slat_flow_img_500k_b2x4_shapenet_chair_cond",
+                "mode": "online"
+            }
+        }
+    }
+}

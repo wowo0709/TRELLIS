@@ -15,10 +15,20 @@ class ImageConditionedMixin:
     Args:
         image_cond_model: The image conditioning model.
     """
-    def __init__(self, *args, image_cond_model: str = 'dinov2_vitl14_reg', **kwargs):
+    def __init__(
+        self,
+        *args,
+        image_cond_model: str = 'dinov2_vitl14_reg',
+        log_cond_images_to_wandb: bool = False,
+        cond_image_log_num_samples: int = 4,
+        **kwargs,
+    ):
         super().__init__(*args, **kwargs)
         self.image_cond_model_name = image_cond_model
         self.image_cond_model = None     # the model is init lazily
+        self.log_cond_images_to_wandb = log_cond_images_to_wandb
+        self.cond_image_log_num_samples = max(int(cond_image_log_num_samples), 1)
+        self._cond_image_logged_step = -1
         
     @staticmethod
     def prepare_for_training(image_cond_model: str, **kwargs):
@@ -51,7 +61,7 @@ class ImageConditionedMixin:
         Encode the image.
         """
         if isinstance(image, torch.Tensor):
-            assert image.ndim == 4, "Image tensor should be batched (B, C, H, W)"
+            assert image.ndim in [4, 5], "Image tensor should be (B, C, H, W) or (B, V, C, H, W)"
         elif isinstance(image, list):
             assert all(isinstance(i, Image.Image) for i in image), "Image list should be list of PIL images"
             image = [i.resize((518, 518), Image.LANCZOS) for i in image]
@@ -63,11 +73,46 @@ class ImageConditionedMixin:
         
         if self.image_cond_model is None:
             self._init_image_cond_model()
+
+        multi_view = isinstance(image, torch.Tensor) and image.ndim == 5
+        if multi_view:
+            b, v, c, h, w = image.shape
+            image = image.reshape(b * v, c, h, w)
+
         image = self.image_cond_model['transform'](image).cuda()
         features = self.image_cond_model['model'](image, is_training=True)['x_prenorm']
         patchtokens = F.layer_norm(features, features.shape[-1:])
+
+        if multi_view:
+            _, t, d = patchtokens.shape
+            patchtokens = patchtokens.reshape(b, v * t, d)
         return patchtokens
         
+    def get_image_wandb_payload(self, cond) -> Optional[Dict[str, torch.Tensor]]:
+        should_log_images = (
+            self.log_cond_images_to_wandb
+            and self.is_master
+            and self.wandb_config.get("use_wandb", False)
+            and ((self.step + 1) % self.i_log == 0)
+            and self._cond_image_logged_step != self.step
+        )
+        if not should_log_images or not isinstance(cond, torch.Tensor):
+            return None
+        if cond.ndim not in [4, 5]:
+            return None
+
+        self._cond_image_logged_step = self.step
+        num_samples = min(self.cond_image_log_num_samples, cond.shape[0])
+        img_dict = {}
+        if cond.ndim == 4:
+            for i in range(num_samples):
+                img_dict[f'cond/image_{i:02d}'] = cond[i:i+1].detach()
+        else:
+            for i in range(num_samples):
+                strip = torch.cat([view for view in cond[i]], dim=2).unsqueeze(0).detach()
+                img_dict[f'cond/image_{i:02d}'] = strip
+        return img_dict
+
     def get_cond(self, cond, **kwargs):
         """
         Get the conditioning data.

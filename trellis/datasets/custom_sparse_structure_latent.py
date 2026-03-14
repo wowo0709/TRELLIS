@@ -208,4 +208,11 @@ class ImageConditionedSparseStructureLatent(CustomImageConditionedMixin, CustomS
     Image-conditioned sparse structure dataset
     """
     pass
+
+
+class CustomImageConditionedSparseStructureLatent(ImageConditionedSparseStructureLatent):
+    """
+    Backward-compatible alias for custom image-conditioned sparse structure dataset.
+    """
+    pass
     

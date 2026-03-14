@@ -442,6 +442,7 @@ class Trainer:
             ret = self.run_step(data_list)
             step_log = ret['step_log']
             img_dict = ret['img_dict'] if 'img_dict' in ret else None
+            text_dict = ret['text_dict'] if 'text_dict' in ret else None
 
             time_end = time.time()
             time_elapsed += time_end - time_start
@@ -542,6 +543,10 @@ class Trainer:
                             }
                             log_show.update(img_show)
                             del img_show, img_dict
+                        if text_dict is not None:
+                            text_show = self._build_wandb_text_show(text_dict)
+                            log_show.update(text_show)
+                            del text_show, text_dict
                         self.log_wandb(log_show, "train", self.step)
                     del log_show
 
@@ -570,6 +575,24 @@ class Trainer:
             for _ in range(wait + warmup + active):
                 self.run_step()
                 prof.step()
+
+    def _build_wandb_text_show(self, text_dict):
+        if text_dict is None:
+            return {}
+
+        text_show = {}
+        for name, captions in text_dict.items():
+            if captions is None:
+                continue
+            if isinstance(captions, str):
+                captions = [captions]
+            if not isinstance(captions, (list, tuple)):
+                continue
+            table = wandb.Table(columns=['index', 'caption'])
+            for i, caption in enumerate(captions):
+                table.add_data(i, str(caption))
+            text_show[name] = table
+        return text_show
 
     def log_wandb(self, data_dict, phase, step=None):
         dict_ = dict()

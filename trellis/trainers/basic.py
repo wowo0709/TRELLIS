@@ -344,6 +344,7 @@ class BasicTrainer(Trainer):
         """
         step_log = {'loss': {}, 'status': {}}
         img_dict = None
+        text_dict = None
         amp_context = partial(torch.autocast, device_type='cuda') if self.fp16_mode == 'amp' else nullcontext
         elastic_controller_context = self.elastic_controller.record if self.elastic_controller_config is not None else nullcontext
 
@@ -367,6 +368,12 @@ class BasicTrainer(Trainer):
                         # [1, 3, H, W], torch.float32, [0, 1]
                         # print("\n", 'rec_image', img_dict['rec_image'].shape, img_dict['rec_image'].dtype, img_dict['rec_image'].min(), img_dict['rec_image'].max(), sep="\n")
                         # print("\n", 'gt_image', img_dict['gt_image'].shape, img_dict['gt_image'].dtype, img_dict['gt_image'].min(), img_dict['gt_image'].max(), sep="\n")
+                    elif len(ret) == 4:
+                        loss, status, img_dict_mb, text_dict_mb = ret
+                        if img_dict_mb is not None:
+                            img_dict = img_dict_mb
+                        if text_dict_mb is not None:
+                            text_dict = text_dict_mb
                     else:
                         raise NotImplementedError(f"Unexpected number of returned output: {len(ret)}")
                     l = loss['loss'] / len(data_list)
@@ -447,6 +454,9 @@ class BasicTrainer(Trainer):
         if self.is_master:
             self.update_ema()
 
+        ret = {'step_log': step_log}
         if img_dict is not None:
-            return {'step_log': step_log, 'img_dict': img_dict}
-        return {'step_log': step_log}
+            ret['img_dict'] = img_dict
+        if text_dict is not None:
+            ret['text_dict'] = text_dict
+        return ret

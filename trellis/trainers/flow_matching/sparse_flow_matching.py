@@ -114,9 +114,12 @@ class SparseFlowMatchingTrainer(FlowMatchingTrainer):
         noise = x_0.replace(torch.randn_like(x_0.feats))
         t = self.sample_t(x_0.shape[0]).to(x_0.device).float()
         x_t = self.diffuse(x_0, t, noise=noise)
+        text_dict = self.get_text_wandb_payload(cond) if hasattr(self, 'get_text_wandb_payload') else None
+        cond_img_dict = self.get_image_wandb_payload(cond) if hasattr(self, 'get_image_wandb_payload') else None
         cond = self.get_cond(cond, **kwargs)
+        model_kwargs = {k: v for k, v in kwargs.items() if k not in ['cond_view']}
         
-        pred = self.training_models['denoiser'](x_t, t * 1000, cond, **kwargs)
+        pred = self.training_models['denoiser'](x_t, t * 1000, cond, **model_kwargs)
         assert pred.shape == noise.shape == x_0.shape
         target = self.get_v(x_0, noise, t)
         terms = edict()
@@ -166,8 +169,11 @@ class SparseFlowMatchingTrainer(FlowMatchingTrainer):
                     self._slat_log_warned = True
                 self.log_slat_to_wandb = False
 
-        if img_dict is not None:
-            return terms, {}, img_dict
+        if cond_img_dict is not None:
+            img_dict = cond_img_dict if img_dict is None else {**cond_img_dict, **img_dict}
+
+        if img_dict is not None or text_dict is not None:
+            return terms, {}, img_dict, text_dict
         return terms, {}
     
     @torch.no_grad()

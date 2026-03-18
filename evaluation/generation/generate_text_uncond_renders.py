@@ -129,17 +129,15 @@ def list_3dfront(points_dir: Path, images_dir: Path, labels_dir: Path, instance:
     for inst in instances:
         point_dir = points_dir / inst
         ply = point_dir / 'voxelized_pc.ply'
-        h_centering = point_dir / 'h_centering.txt'
         image_root = images_dir / inst
         camera_npz = labels_dir / inst / 'boxes.npz'
-        if all(_safe_exists(p) for p in [ply, h_centering, camera_npz]) and image_root.is_dir():
+        if all(_safe_exists(p) for p in [ply, camera_npz]) and image_root.is_dir():
             items.append({
                 'dataset': '3dfront',
                 'instance': inst,
                 'points_path': ply,
                 'camera_root': image_root,
                 'camera_npz': camera_npz,
-                'h_centering_path': h_centering,
             })
     return items
 
@@ -221,13 +219,9 @@ def load_cameras_gobjaverse(camera_root: Path, n_views: int) -> Tuple[List[torch
 def load_cameras_3dfront(
     camera_root: Path,
     camera_npz_path: Path,
-    h_centering_path: Path,
     n_views: int,
     fov_deg: float,
 ) -> Tuple[List[torch.Tensor], List[torch.Tensor], List[Dict]]:
-    with open(h_centering_path, 'r') as fp:
-        h_centering = float(fp.readline().strip())
-
     cam = np.load(camera_npz_path, allow_pickle=True)
     if 'camera_coords' not in cam or 'target_coords' not in cam:
         raise KeyError(f"{camera_npz_path} missing 'camera_coords'/'target_coords'")
@@ -241,10 +235,8 @@ def load_cameras_3dfront(
         if not _safe_exists(png_path):
             continue
 
-        target = target_coords_all[i]
-        camera = camera_coords_all[i]
-        target = np.array([target[0], target[1] - h_centering, target[2]], dtype=np.float32)
-        camera = np.array([camera[0], camera[1] - h_centering, camera[2]], dtype=np.float32)
+        target = np.array(target_coords_all[i], dtype=np.float32)
+        camera = np.array(camera_coords_all[i], dtype=np.float32)
         forward = target - camera
         rotation = -rotation_from_forward_vec(forward[None, ...])[0]
 
@@ -262,7 +254,6 @@ def load_cameras_3dfront(
             'view_index': i,
             'image_path': str(png_path),
             'camera_npz': str(camera_npz_path),
-            'h_centering': h_centering,
         })
     return extrinsics, intrinsics, metadata
 
@@ -274,7 +265,7 @@ def load_item_cameras(item: Dict, n_views: int, fov3dfront_deg: float) -> Tuple[
     if dataset == 'gobjaverse':
         return load_cameras_gobjaverse(item['camera_root'], n_views)
     if dataset == '3dfront':
-        return load_cameras_3dfront(item['camera_root'], item['camera_npz'], item['h_centering_path'], n_views, fov3dfront_deg)
+        return load_cameras_3dfront(item['camera_root'], item['camera_npz'], n_views, fov3dfront_deg)
     raise ValueError(f'Unsupported dataset: {dataset}')
 
 

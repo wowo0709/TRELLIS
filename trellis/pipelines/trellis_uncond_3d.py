@@ -170,42 +170,35 @@ class TrellisUncond3DPipeline(Pipeline):
         slat = self.sample_slat(coords, slat_sampler_params)
         return self.decode_slat(slat, formats)
     
-    def voxelize(self, mesh: o3d.geometry.TriangleMesh, min_bound: Sequence[float], max_bound: Sequence[float], resolution: Optional[int] = 64) -> torch.Tensor:
+    def voxelize(self, mesh: o3d.geometry.TriangleMesh, scale: float = 0.5, resolution: Optional[int] = 64) -> torch.Tensor:
         """
         Voxelize a mesh.
 
         Args:
             mesh (o3d.geometry.TriangleMesh): The mesh to voxelize.
+            scale (float): Half-extent of the voxelization bounds. ``0.5`` preserves
+                the previous ``[-0.5, 0.5]`` normalization.
+            resolution (Optional[int]): Resolution of the voxel grid.
         """
+        if scale <= 0:
+            raise ValueError("scale must be positive")
+
         vertices = np.asarray(mesh.vertices)
-    
-        # --- normalize vertices to [min_bound, max_bound] range ---
         aabb = np.stack([vertices.min(0), vertices.max(0)])
         center = (aabb[0] + aabb[1]) / 2
-        scale = (aabb[1] - aabb[0]).max()
-        
-        # 기존엔 [-0.5, 0.5]로 normalize 했지만,
-        # 이제는 [min_bound, max_bound] 범위로 선형 매핑
-        min_bound = np.array(min_bound, dtype=np.float32)
-        max_bound = np.array(max_bound, dtype=np.float32)
-        extent = max_bound - min_bound
-        
-        # 기존 object를 [-0.5, 0.5] 범위에서 min_bound~max_bound로 이동시킴
-        vertices = (vertices - center) / scale                  # [-0.5, 0.5] 범위 normalize
-        vertices = (vertices + 0.5) * extent + min_bound        # → [min_bound, max_bound]
-        
+        mesh_scale = (aabb[1] - aabb[0]).max()
+        vertices = (vertices - center) / mesh_scale
+        vertices = vertices * (2 * scale)
+        vertices = np.clip(vertices, -scale + 1e-6, scale - 1e-6)
         mesh.vertices = o3d.utility.Vector3dVector(vertices)
 
-        # --- voxelization ---
-        # 이제 voxelization도 world-space bound를 직접 지정
         voxel_grid = o3d.geometry.VoxelGrid.create_from_triangle_mesh_within_bounds(
             mesh,
-            voxel_size=(extent.max() / resolution),   # 상대적 voxel 크기 (resolution 맞추기)
-            min_bound=min_bound.tolist(),
-            max_bound=max_bound.tolist()
+            voxel_size=(2 * scale) / resolution,
+            min_bound=(-scale, -scale, -scale),
+            max_bound=(scale, scale, scale),
         )
 
-        # --- voxel indices 반환 ---
         vertices = np.array([voxel.grid_index for voxel in voxel_grid.get_voxels()])
         return torch.tensor(vertices).int().cuda()
 
@@ -215,6 +208,7 @@ class TrellisUncond3DPipeline(Pipeline):
         mesh: o3d.geometry.TriangleMesh,
         num_samples: int = 1,
         seed: int = 42,
+        scale: float = 0.5,
         slat_sampler_params: dict = {},
         formats: List[str] = ['mesh', 'gaussian', 'radiance_field'],
     ) -> dict:
@@ -225,10 +219,12 @@ class TrellisUncond3DPipeline(Pipeline):
             mesh (o3d.geometry.TriangleMesh): The base mesh.
             num_samples (int): The number of samples to generate.
             seed (int): The random seed
+            scale (float): Half-extent of the voxelization bounds. ``0.5`` preserves
+                the previous behavior.
             slat_sampler_params (dict): Additional parameters for the structured latent sampler.
             formats (List[str]): The formats to decode the structured latent to.
         """
-        coords = self.voxelize(mesh)
+        coords = self.voxelize(mesh, scale=scale)
         coords = torch.cat([
             torch.arange(num_samples).repeat_interleave(coords.shape[0], 0)[:, None].int().cuda(),
             coords.repeat(num_samples, 1)

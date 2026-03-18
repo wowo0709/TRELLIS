@@ -226,23 +226,32 @@ class TrellisTextTo3DPipeline(Pipeline):
         slat = self.sample_slat(cond, coords, slat_sampler_params)
         return self.decode_slat(slat, formats)
     
-    def voxelize(self, mesh: o3d.geometry.TriangleMesh) -> torch.Tensor:
+    def voxelize(self, mesh: o3d.geometry.TriangleMesh, scale: float = 0.5) -> torch.Tensor:
         """
         Voxelize a mesh.
 
         Args:
             mesh (o3d.geometry.TriangleMesh): The mesh to voxelize.
-            sha256 (str): The SHA256 hash of the mesh.
-            output_dir (str): The output directory.
+            scale (float): Half-extent of the voxelization bounds. ``0.5`` preserves
+                the previous ``[-0.5, 0.5]`` normalization.
         """
+        if scale <= 0:
+            raise ValueError("scale must be positive")
+
         vertices = np.asarray(mesh.vertices)
         aabb = np.stack([vertices.min(0), vertices.max(0)])
         center = (aabb[0] + aabb[1]) / 2
-        scale = (aabb[1] - aabb[0]).max()
-        vertices = (vertices - center) / scale
-        vertices = np.clip(vertices, -0.5 + 1e-6, 0.5 - 1e-6)
+        mesh_scale = (aabb[1] - aabb[0]).max()
+        vertices = (vertices - center) / mesh_scale
+        vertices = vertices * (2 * scale)
+        vertices = np.clip(vertices, -scale + 1e-6, scale - 1e-6)
         mesh.vertices = o3d.utility.Vector3dVector(vertices)
-        voxel_grid = o3d.geometry.VoxelGrid.create_from_triangle_mesh_within_bounds(mesh, voxel_size=1/64, min_bound=(-0.5, -0.5, -0.5), max_bound=(0.5, 0.5, 0.5))
+        voxel_grid = o3d.geometry.VoxelGrid.create_from_triangle_mesh_within_bounds(
+            mesh,
+            voxel_size=(2 * scale) / 64,
+            min_bound=(-scale, -scale, -scale),
+            max_bound=(scale, scale, scale),
+        )
         vertices = np.array([voxel.grid_index for voxel in voxel_grid.get_voxels()])
         return torch.tensor(vertices).int().cuda()
 
@@ -253,6 +262,7 @@ class TrellisTextTo3DPipeline(Pipeline):
         prompt: str,
         num_samples: int = 1,
         seed: int = 42,
+        scale: float = 0.5,
         slat_sampler_params: dict = {},
         formats: List[str] = ['mesh', 'gaussian', 'radiance_field'],
     ) -> dict:
@@ -264,11 +274,13 @@ class TrellisTextTo3DPipeline(Pipeline):
             prompt (str): The text prompt.
             num_samples (int): The number of samples to generate.
             seed (int): The random seed
+            scale (float): Half-extent of the voxelization bounds. ``0.5`` preserves
+                the previous behavior.
             slat_sampler_params (dict): Additional parameters for the structured latent sampler.
             formats (List[str]): The formats to decode the structured latent to.
         """
         cond = self.get_cond([prompt])
-        coords = self.voxelize(mesh)
+        coords = self.voxelize(mesh, scale=scale)
         coords = torch.cat([
             torch.arange(num_samples).repeat_interleave(coords.shape[0], 0)[:, None].int().cuda(),
             coords.repeat(num_samples, 1)

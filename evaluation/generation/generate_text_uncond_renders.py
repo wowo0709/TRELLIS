@@ -1,6 +1,8 @@
 import argparse
 import json
 import os
+import sys
+sys.path.append("/root/dev/TRELLIS")
 from pathlib import Path
 from typing import Dict, List, Sequence, Tuple
 
@@ -129,15 +131,17 @@ def list_3dfront(points_dir: Path, images_dir: Path, labels_dir: Path, instance:
     for inst in instances:
         point_dir = points_dir / inst
         ply = point_dir / 'voxelized_pc.ply'
+        h_centering = point_dir / 'h_centering.txt'
         image_root = images_dir / inst
         camera_npz = labels_dir / inst / 'boxes.npz'
-        if all(_safe_exists(p) for p in [ply, camera_npz]) and image_root.is_dir():
+        if all(_safe_exists(p) for p in [ply, h_centering, camera_npz]) and image_root.is_dir():
             items.append({
                 'dataset': '3dfront',
                 'instance': inst,
                 'points_path': ply,
                 'camera_root': image_root,
                 'camera_npz': camera_npz,
+                'h_centering_path': h_centering,
             })
     return items
 
@@ -219,9 +223,13 @@ def load_cameras_gobjaverse(camera_root: Path, n_views: int) -> Tuple[List[torch
 def load_cameras_3dfront(
     camera_root: Path,
     camera_npz_path: Path,
+    h_centering_path: Path,
     n_views: int,
     fov_deg: float,
 ) -> Tuple[List[torch.Tensor], List[torch.Tensor], List[Dict]]:
+    with open(h_centering_path, 'r') as fp:
+        h_centering = float(fp.readline().strip())
+
     cam = np.load(camera_npz_path, allow_pickle=True)
     if 'camera_coords' not in cam or 'target_coords' not in cam:
         raise KeyError(f"{camera_npz_path} missing 'camera_coords'/'target_coords'")
@@ -235,8 +243,10 @@ def load_cameras_3dfront(
         if not _safe_exists(png_path):
             continue
 
-        target = np.array(target_coords_all[i], dtype=np.float32)
-        camera = np.array(camera_coords_all[i], dtype=np.float32)
+        target = target_coords_all[i]
+        camera = camera_coords_all[i]
+        target = np.array([target[0], target[1] - h_centering, target[2]], dtype=np.float32)
+        camera = np.array([camera[0], camera[1] - h_centering, camera[2]], dtype=np.float32)
         forward = target - camera
         rotation = -rotation_from_forward_vec(forward[None, ...])[0]
 
@@ -254,6 +264,7 @@ def load_cameras_3dfront(
             'view_index': i,
             'image_path': str(png_path),
             'camera_npz': str(camera_npz_path),
+            'h_centering': h_centering,
         })
     return extrinsics, intrinsics, metadata
 
@@ -265,9 +276,59 @@ def load_item_cameras(item: Dict, n_views: int, fov3dfront_deg: float) -> Tuple[
     if dataset == 'gobjaverse':
         return load_cameras_gobjaverse(item['camera_root'], n_views)
     if dataset == '3dfront':
-        return load_cameras_3dfront(item['camera_root'], item['camera_npz'], n_views, fov3dfront_deg)
+        return load_cameras_3dfront(item['camera_root'], item['camera_npz'], item['h_centering_path'], n_views, fov3dfront_deg)
     raise ValueError(f'Unsupported dataset: {dataset}')
 
+
+
+
+def get_camera_pool_limit(dataset: str) -> int:
+    if dataset == 'shapenet':
+        return 24
+    if dataset in ('gobjaverse', '3dfront'):
+        return 40
+    raise ValueError(f'Unsupported dataset: {dataset}')
+
+
+def select_camera_views(
+    extrinsics: Sequence[torch.Tensor],
+    intrinsics: Sequence[torch.Tensor],
+    metadata: Sequence[Dict],
+    n_views: int,
+    mode: str,
+    seed: int,
+) -> Tuple[List[torch.Tensor], List[torch.Tensor], List[Dict]]:
+    total = len(extrinsics)
+    if total == 0:
+        raise ValueError('No cameras were loaded from the source item.')
+    if n_views > total:
+        raise ValueError(f'Requested n_views={n_views}, but only {total} cameras are available.')
+
+    if mode == 'first':
+        indices = list(range(n_views))
+    elif mode == 'last':
+        indices = list(range(total - n_views, total))
+    elif mode == 'uniform':
+        if n_views == 1:
+            indices = [0]
+        else:
+            indices = np.linspace(0, total - 1, num=n_views)
+            indices = np.round(indices).astype(int).tolist()
+    elif mode == 'random':
+        rng = np.random.default_rng(seed)
+        indices = rng.choice(total, size=n_views, replace=False).tolist()
+    else:
+        raise ValueError(f'Unsupported camera_mode: {mode}')
+
+    selected_extrinsics = [extrinsics[i] for i in indices]
+    selected_intrinsics = [intrinsics[i] for i in indices]
+    selected_metadata = []
+    for out_idx, src_idx in enumerate(indices):
+        meta = dict(metadata[src_idx])
+        meta['source_view_index'] = meta.get('view_index', src_idx)
+        meta['selected_order'] = out_idx
+        selected_metadata.append(meta)
+    return selected_extrinsics, selected_intrinsics, selected_metadata
 
 def validate_camera_batch(extrinsics: Sequence[torch.Tensor], intrinsics: Sequence[torch.Tensor], expected_views: int, item: Dict) -> None:
     if len(extrinsics) < expected_views or len(intrinsics) < expected_views:
@@ -308,6 +369,7 @@ def discover_items(args: argparse.Namespace) -> List[Dict]:
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description='Generate TRELLIS text-unconditioned 3D samples and render them with dataset cameras.')
     parser.add_argument('--pipeline_path', type=str, required=True, help='Path to a TRELLIS text-unconditioned pipeline folder or Hugging Face repo.')
+    parser.add_argument('--gpu', type=int, default=None, help='CUDA device index to use. Defaults to the current CUDA default device.')
     parser.add_argument('--dataset', choices=['shapenet', 'gobjaverse', '3dfront'], required=True, help='Dataset camera convention to use.')
     parser.add_argument('--points_dir', type=str, required=True, help='Root directory used to discover valid dataset instances and metadata.')
     parser.add_argument('--images_dir', type=str, required=True, help='Root directory containing rendered images and camera files.')
@@ -316,13 +378,16 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument('--prompt', type=str, default='null', help='Prompt passed to TrellisTextUncond3DPipeline.run().')
     parser.add_argument('--n_items', type=int, default=2500, help='Number of generated samples to render.')
     parser.add_argument('--n_views', type=int, default=20, help='Number of dataset camera views to use per sample.')
-    parser.add_argument('--start_index', type=int, default=0, help='Start index into the discovered dataset items.')
+    parser.add_argument('--start_index', type=int, default=0, help='Starting output sample index.')
     parser.add_argument('--seed_base', type=int, default=0, help='Base seed; sample i uses seed_base + i.')
+    parser.add_argument('--camera_source_index', type=int, default=0, help='Index of the dataset instance used to source the camera set.')
+    parser.add_argument('--camera_mode', choices=['random', 'first', 'last', 'uniform'], default='first', help='How to select n_views cameras from the source item camera pool.')
+    parser.add_argument('--camera_seed', type=int, default=0, help='Seed used when camera_mode=random.')
     parser.add_argument('--category', type=str, default=None, help='Optional category filter for ShapeNet or GObjaverse.')
     parser.add_argument('--sub_category', type=str, default=None, help='Optional sub-category filter for GObjaverse.')
     parser.add_argument('--instance', type=str, default=None, help='Optional single instance filter.')
     parser.add_argument('--resolution', type=int, default=512, help='Render resolution.')
-    parser.add_argument('--bg_color', type=float, nargs=3, default=(0.0, 0.0, 0.0), help='Renderer background color as three floats in [0, 1].')
+    parser.add_argument('--bg_color', type=float, nargs=3, default=(1.0, 1.0, 1.0), help='Renderer background color as three floats in [0, 1].')
     parser.add_argument('--near', type=float, default=0.8, help='Renderer near plane.')
     parser.add_argument('--far', type=float, default=1.6, help='Renderer far plane.')
     parser.add_argument('--ssaa', type=int, default=1, help='Renderer SSAA factor for Gaussian rendering.')
@@ -338,24 +403,50 @@ def main() -> None:
     output_dir = Path(args.output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
 
+    if not torch.cuda.is_available():
+        raise RuntimeError('CUDA is required to run this script, but no CUDA device is available.')
+    device = torch.device(f'cuda:{args.gpu}' if args.gpu is not None else 'cuda')
+    torch.cuda.set_device(device)
+
     pipeline = TrellisTextUncond3DPipeline.from_pretrained(args.pipeline_path)
-    pipeline.cuda()
+    pipeline.to(device)
 
     items = discover_items(args)
-    selected = items[args.start_index: args.start_index + args.n_items]
-    if len(selected) < args.n_items:
+    if args.camera_source_index < 0 or args.camera_source_index >= len(items):
         raise ValueError(
-            f'Requested {args.n_items} items starting at {args.start_index}, but only {len(selected)} were available.'
+            f'camera_source_index={args.camera_source_index} is out of range for {len(items)} discovered items.'
         )
+    camera_source_item = items[args.camera_source_index]
+    source_extrinsics, source_intrinsics, source_camera_meta = load_item_cameras(
+        camera_source_item,
+        get_camera_pool_limit(args.dataset),
+        args.fov3dfront_deg,
+    )
+    camera_extrinsics, camera_intrinsics, camera_meta = select_camera_views(
+        source_extrinsics,
+        source_intrinsics,
+        source_camera_meta,
+        args.n_views,
+        args.camera_mode,
+        args.camera_seed,
+    )
+    validate_camera_batch(camera_extrinsics, camera_intrinsics, args.n_views, camera_source_item)
+    camera_extrinsics = [tensor.to(device) for tensor in camera_extrinsics]
+    camera_intrinsics = [tensor.to(device) for tensor in camera_intrinsics]
 
     manifest = {
         'pipeline_path': args.pipeline_path,
+        'gpu': args.gpu,
         'dataset': args.dataset,
         'prompt': args.prompt,
         'n_items': args.n_items,
         'n_views': args.n_views,
         'start_index': args.start_index,
         'seed_base': args.seed_base,
+        'camera_source_index': args.camera_source_index,
+        'camera_mode': args.camera_mode,
+        'camera_seed': args.camera_seed,
+        'camera_source_item': {key: str(value) for key, value in camera_source_item.items()},
         'resolution': args.resolution,
         'bg_color': list(map(float, args.bg_color)),
         'near': args.near,
@@ -367,7 +458,7 @@ def main() -> None:
     with open(output_dir / 'manifest.json', 'w') as fp:
         json.dump(manifest, fp, indent=2)
 
-    for sample_offset, item in enumerate(tqdm(selected, desc='Generating and rendering')):
+    for sample_offset in tqdm(range(args.n_items), desc='Generating and rendering'):
         sample_idx = args.start_index + sample_offset
         seed = args.seed_base + sample_offset
         sample_dir = output_dir / f'{sample_idx:05d}'
@@ -375,11 +466,6 @@ def main() -> None:
         expected_pngs = [sample_dir / f'{view_idx:05d}.png' for view_idx in range(args.n_views)]
         if args.skip_existing and all(path.exists() for path in expected_pngs):
             continue
-
-        extrinsics, intrinsics, camera_meta = load_item_cameras(item, args.n_views, args.fov3dfront_deg)
-        validate_camera_batch(extrinsics, intrinsics, args.n_views, item)
-        extrinsics = [tensor.cuda() for tensor in extrinsics[:args.n_views]]
-        intrinsics = [tensor.cuda() for tensor in intrinsics[:args.n_views]]
 
         with torch.no_grad():
             outputs = pipeline.run(
@@ -391,8 +477,8 @@ def main() -> None:
             gaussian = outputs['gaussian'][0]
             rendered = render_utils.render_frames(
                 gaussian,
-                extrinsics,
-                intrinsics,
+                camera_extrinsics,
+                camera_intrinsics,
                 options={
                     'resolution': args.resolution,
                     'bg_color': tuple(args.bg_color),
@@ -418,7 +504,8 @@ def main() -> None:
             'sample_index': sample_idx,
             'seed': seed,
             'prompt': args.prompt,
-            'item': {key: str(value) for key, value in item.items()},
+            'camera_source_item': {key: str(value) for key, value in camera_source_item.items()},
+            'camera_mode': args.camera_mode,
             'camera_meta': camera_meta[:args.n_views],
         }
         with open(sample_dir / 'meta.json', 'w') as fp:
@@ -437,37 +524,49 @@ cd /root/dev/TRELLIS
 python evaluation/generation/generate_text_uncond_renders.py \
   --pipeline_path /path/to/trellis_text_uncond_pipeline \
   --dataset shapenet \
-  --points_dir /path/to/shapenet_points \
+  --points_dir /path/to/shapenet_vox_points \
   --images_dir /path/to/shapenet_images \
   --output_dir /path/to/output \
   --prompt "null" \
   --n_items 2500 \
   --n_views 20 \
-  --seed_base 0
+  --camera_source_index 0 \
+  --camera_mode uniform \
+  --save_ply \
+  --gpu 0
 
 [gobjaverse]
 cd /root/dev/TRELLIS
 python evaluation/generation/generate_text_uncond_renders.py \
   --pipeline_path /path/to/trellis_text_uncond_pipeline \
   --dataset gobjaverse \
-  --points_dir /path/to/gobjaverse_points \
+  --points_dir /path/to/gobjaverse_vox_points \
   --images_dir /path/to/gobjaverse_images \
   --output_dir /path/to/output \
   --prompt "null" \
   --n_items 2500 \
-  --n_views 20
+  --n_views 20 \
+  --camera_source_index 0 \
+  --camera_mode uniform \
+  --save_ply \
+  --gpu 0
 
 [3dfront]
 cd /root/dev/TRELLIS
 python evaluation/generation/generate_text_uncond_renders.py \
   --pipeline_path /path/to/trellis_text_uncond_pipeline \
   --dataset 3dfront \
-  --points_dir /path/to/3dfront_points \
+  --points_dir /path/to/3dfront_vox_points \
   --images_dir /path/to/3dfront_images \
   --labels_dir /path/to/3dfront_labels \
   --output_dir /path/to/output \
   --prompt "null" \
   --n_items 2500 \
   --n_views 20 \
+  --camera_source_index 0 \
+  --camera_mode last \
+  --gpu 0 \
+  --resolution 256 \
+  --save_ply \
   --fov3dfront_deg 70
 """

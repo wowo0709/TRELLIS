@@ -112,6 +112,7 @@ class TrellisTextUncond3DPipeline(Pipeline):
         cond: dict,
         num_samples: int = 1,
         sampler_params: dict = {},
+        verbose: bool = True,
     ) -> torch.Tensor:
         """
         Sample sparse structures with the given conditioning.
@@ -131,7 +132,7 @@ class TrellisTextUncond3DPipeline(Pipeline):
             noise,
             **cond,
             **sampler_params,
-            verbose=True
+            verbose=verbose
         ).samples
         
         # Decode occupancy latent
@@ -169,6 +170,7 @@ class TrellisTextUncond3DPipeline(Pipeline):
         cond: dict,
         coords: torch.Tensor,
         sampler_params: dict = {},
+        verbose: bool = True,
     ) -> sp.SparseTensor:
         """
         Sample structured latent with the given conditioning.
@@ -190,7 +192,7 @@ class TrellisTextUncond3DPipeline(Pipeline):
             noise,
             **cond,
             **sampler_params,
-            verbose=True
+            verbose=verbose
         ).samples
 
         std = torch.tensor(self.slat_normalization['std'])[None].to(slat.device)
@@ -208,6 +210,7 @@ class TrellisTextUncond3DPipeline(Pipeline):
         sparse_structure_sampler_params: dict = {},
         slat_sampler_params: dict = {},
         formats: List[str] = ['mesh', 'gaussian', 'radiance_field'],
+        verbose: bool = True,
     ) -> dict:
         """
         Run the pipeline.
@@ -222,8 +225,8 @@ class TrellisTextUncond3DPipeline(Pipeline):
         """
         cond = self.get_cond([prompt])
         torch.manual_seed(seed)
-        coords = self.sample_sparse_structure(cond, num_samples, sparse_structure_sampler_params)
-        slat = self.sample_slat(cond, coords, slat_sampler_params)
+        coords = self.sample_sparse_structure(cond, num_samples, sparse_structure_sampler_params, verbose=verbose)
+        slat = self.sample_slat(cond, coords, slat_sampler_params, verbose=verbose)
         return self.decode_slat(slat, formats)
     
     def voxelize(self, mesh: o3d.geometry.TriangleMesh, scale: float = 0.5) -> torch.Tensor:

@@ -458,9 +458,11 @@ def main() -> None:
     with open(output_dir / 'manifest.json', 'w') as fp:
         json.dump(manifest, fp, indent=2)
 
-    for sample_offset in tqdm(range(args.n_items), desc='Generating and rendering'):
+    progress = tqdm(range(args.n_items), desc=f'Sample {args.start_index}/{args.start_index + args.n_items}')
+    for sample_offset in progress:
         sample_idx = args.start_index + sample_offset
         seed = args.seed_base + sample_offset
+        progress.set_description(f'Sample {sample_idx + 1}/{args.start_index + args.n_items}')
         sample_dir = output_dir / f'{sample_idx:05d}'
         sample_dir.mkdir(parents=True, exist_ok=True)
         expected_pngs = [sample_dir / f'{view_idx:05d}.png' for view_idx in range(args.n_views)]
@@ -473,6 +475,7 @@ def main() -> None:
                 num_samples=1,
                 seed=seed,
                 formats=['gaussian'],
+                verbose=False,
             )
             gaussian = outputs['gaussian'][0]
             rendered = render_utils.render_frames(

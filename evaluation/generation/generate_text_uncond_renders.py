@@ -346,6 +346,11 @@ def validate_camera_batch(extrinsics: Sequence[torch.Tensor], intrinsics: Sequen
             raise ValueError(f'Non-finite intrinsics detected at view {idx}')
 
 
+def is_empty_structure_error(exc: BaseException) -> bool:
+    message = str(exc)
+    return 'Empty sparse structure' in message or 'empty sparse structure' in message
+
+
 def discover_items(args: argparse.Namespace) -> List[Dict]:
     points_dir = Path(args.points_dir)
     images_dir = Path(args.images_dir)
@@ -395,6 +400,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument('--fov3dfront_deg', type=float, default=70.0, help='Symmetric FOV used for 3D-FRONT camera loading.')
     parser.add_argument('--skip_existing', action='store_true', help='Skip a sample if all expected view PNGs already exist.')
     parser.add_argument('--save_ply', action='store_true', help='Also save the generated Gaussian as a PLY file for each sample.')
+    parser.add_argument('--max_retries', type=int, default=3, help='Maximum number of retry attempts when a generated sample has an empty sparse structure.')
     return parser.parse_args()
 
 
@@ -458,10 +464,11 @@ def main() -> None:
     with open(output_dir / 'manifest.json', 'w') as fp:
         json.dump(manifest, fp, indent=2)
 
+    failed_log_path = output_dir / 'failed_samples.jsonl'
     progress = tqdm(range(args.n_items), desc=f'Sample {args.start_index}/{args.start_index + args.n_items}')
     for sample_offset in progress:
         sample_idx = args.start_index + sample_offset
-        seed = args.seed_base + sample_offset
+        base_seed = args.seed_base + sample_offset
         progress.set_description(f'Sample {sample_idx + 1}/{args.start_index + args.n_items}')
         sample_dir = output_dir / f'{sample_idx:05d}'
         sample_dir.mkdir(parents=True, exist_ok=True)
@@ -469,29 +476,65 @@ def main() -> None:
         if args.skip_existing and all(path.exists() for path in expected_pngs):
             continue
 
-        with torch.no_grad():
-            outputs = pipeline.run(
-                prompt=args.prompt,
-                num_samples=1,
-                seed=seed,
-                formats=['gaussian'],
-                verbose=False,
-            )
-            gaussian = outputs['gaussian'][0]
-            rendered = render_utils.render_frames(
-                gaussian,
-                camera_extrinsics,
-                camera_intrinsics,
-                options={
-                    'resolution': args.resolution,
-                    'bg_color': tuple(args.bg_color),
-                    'near': args.near,
-                    'far': args.far,
-                    'ssaa': args.ssaa,
-                    'kernel_size': args.kernel_size,
-                },
-                verbose=False,
-            )
+        gaussian = None
+        rendered = None
+        used_seed = None
+        used_attempt = None
+        attempted_seeds = []
+        last_error = None
+
+        for attempt in range(args.max_retries + 1):
+            seed = base_seed + attempt
+            attempted_seeds.append(seed)
+            progress.set_postfix_str(f'attempt {attempt + 1}/{args.max_retries + 1}')
+            try:
+                with torch.no_grad():
+                    outputs = pipeline.run(
+                        prompt=args.prompt,
+                        num_samples=1,
+                        seed=seed,
+                        formats=['gaussian'],
+                        verbose=False,
+                    )
+                    gaussian = outputs['gaussian'][0]
+                    rendered = render_utils.render_frames(
+                        gaussian,
+                        camera_extrinsics,
+                        camera_intrinsics,
+                        options={
+                            'resolution': args.resolution,
+                            'bg_color': tuple(args.bg_color),
+                            'near': args.near,
+                            'far': args.far,
+                            'ssaa': args.ssaa,
+                            'kernel_size': args.kernel_size,
+                        },
+                        verbose=False,
+                    )
+                used_seed = seed
+                used_attempt = attempt
+                break
+            except RuntimeError as exc:
+                if not is_empty_structure_error(exc):
+                    raise
+                last_error = exc
+
+        progress.set_postfix_str('')
+
+        if rendered is None or gaussian is None:
+            failure = {
+                'sample_index': sample_idx,
+                'prompt': args.prompt,
+                'base_seed': base_seed,
+                'attempted_seeds': attempted_seeds,
+                'max_retries': args.max_retries,
+                'error': str(last_error) if last_error is not None else 'Unknown empty sparse structure failure.',
+            }
+            with open(failed_log_path, 'a') as fp:
+                fp.write(json.dumps(failure) + '\n')
+            with open(sample_dir / 'failed.json', 'w') as fp:
+                json.dump(failure, fp, indent=2)
+            continue
 
         colors = rendered.get('color', [])
         if len(colors) != args.n_views:
@@ -505,7 +548,10 @@ def main() -> None:
 
         sample_meta = {
             'sample_index': sample_idx,
-            'seed': seed,
+            'seed': used_seed,
+            'base_seed': base_seed,
+            'retry_attempt': used_attempt,
+            'attempted_seeds': attempted_seeds,
             'prompt': args.prompt,
             'camera_source_item': {key: str(value) for key, value in camera_source_item.items()},
             'camera_mode': args.camera_mode,

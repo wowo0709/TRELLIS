@@ -181,6 +181,8 @@ class TrellisTextUncond3DPipeline(Pipeline):
             sampler_params (dict): Additional parameters for the sampler.
         """
         # Sample structured latent
+        if coords.numel() == 0:
+            raise RuntimeError('Cannot sample structured latent from an empty sparse structure.')
         flow_model = self.models['slat_flow_model']
         noise = sp.SparseTensor(
             feats=torch.randn(coords.shape[0], flow_model.in_channels).to(self.device),
@@ -226,6 +228,8 @@ class TrellisTextUncond3DPipeline(Pipeline):
         cond = self.get_cond([prompt])
         torch.manual_seed(seed)
         coords = self.sample_sparse_structure(cond, num_samples, sparse_structure_sampler_params, verbose=verbose)
+        if coords.numel() == 0:
+            raise RuntimeError(f'Empty sparse structure generated for seed={seed}, prompt={prompt!r}.')
         slat = self.sample_slat(cond, coords, slat_sampler_params, verbose=verbose)
         return self.decode_slat(slat, formats)
     

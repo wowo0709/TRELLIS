@@ -59,7 +59,8 @@ class TrellisTextUncond3DPipeline(Pipeline):
 
         new_pipeline.slat_normalization = args['slat_normalization']
 
-        new_pipeline._init_text_cond_model(args['text_cond_model'])
+        text_cond_model = args.get('text_cond_model', 'openai/clip-vit-large-patch14')
+        new_pipeline._init_text_cond_model(text_cond_model)
 
         return new_pipeline
     
@@ -67,6 +68,8 @@ class TrellisTextUncond3DPipeline(Pipeline):
         """
         Initialize the text conditioning model.
         """
+        if name is None:
+            name = 'openai/clip-vit-large-patch14'
         # load model
         model = CLIPTextModel.from_pretrained(name)
         tokenizer = AutoTokenizer.from_pretrained(name)

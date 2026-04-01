@@ -571,7 +571,7 @@ if __name__ == '__main__':
 [shapenet]
 cd /root/dev/TRELLIS
 python evaluation/generation/generate_text_uncond_renders.py \
-  --pipeline_path /path/to/trellis_text_uncond_pipeline \
+  --pipeline_path /path/to/trellis_text_uncond_pipeline/airplane \
   --dataset shapenet \
   --points_dir /path/to/shapenet_vox_points \
   --images_dir /path/to/shapenet_images \
@@ -579,6 +579,8 @@ python evaluation/generation/generate_text_uncond_renders.py \
   --prompt "null" \
   --n_items 2500 \
   --n_views 20 \
+  --start_index 0 \
+  --seed_base 0 \
   --camera_source_index 0 \
   --camera_mode uniform \
   --save_ply \
@@ -587,14 +589,16 @@ python evaluation/generation/generate_text_uncond_renders.py \
 [gobjaverse]
 cd /root/dev/TRELLIS
 python evaluation/generation/generate_text_uncond_renders.py \
-  --pipeline_path /path/to/trellis_text_uncond_pipeline \
+  --pipeline_path /path/to/trellis_text_uncond_pipeline/animals_subset \
   --dataset gobjaverse \
   --points_dir /path/to/gobjaverse_vox_points \
   --images_dir /path/to/gobjaverse_images \
   --output_dir /path/to/output \
   --prompt "null" \
-  --n_items 2500 \
-  --n_views 20 \
+  --n_items 1250 \
+  --n_views 40 \
+  --start_index 0 \
+  --seed_base 0 \
   --camera_source_index 0 \
   --camera_mode uniform \
   --save_ply \
@@ -603,7 +607,7 @@ python evaluation/generation/generate_text_uncond_renders.py \
 [3dfront]
 cd /root/dev/TRELLIS
 python evaluation/generation/generate_text_uncond_renders.py \
-  --pipeline_path /path/to/trellis_text_uncond_pipeline \
+  --pipeline_path /path/to/trellis_text_uncond_pipeline/bedroom \
   --dataset 3dfront \
   --points_dir /path/to/3dfront_vox_points \
   --images_dir /path/to/3dfront_images \
@@ -612,6 +616,8 @@ python evaluation/generation/generate_text_uncond_renders.py \
   --prompt "null" \
   --n_items 2500 \
   --n_views 20 \
+  --start_index 0 \
+  --seed_base 0 \
   --camera_source_index 0 \
   --camera_mode last \
   --gpu 0 \

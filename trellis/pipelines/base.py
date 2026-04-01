@@ -1,4 +1,6 @@
 from typing import *
+import os
+import json
 import torch
 import torch.nn as nn
 from .. import models
@@ -23,8 +25,6 @@ class Pipeline:
         """
         Load a pretrained model.
         """
-        import os
-        import json
         is_local = os.path.exists(f"{path}/pipeline.json")
 
         if is_local:
@@ -38,10 +38,13 @@ class Pipeline:
 
         _models = {}
         for k, v in args['models'].items():
-            try:
-                _models[k] = models.from_pretrained(f"{path}/{v}")
-            except:
-                _models[k] = models.from_pretrained(v)
+            if os.path.isabs(v):
+                model_path = v
+            elif is_local:
+                model_path = os.path.normpath(os.path.join(path, v))
+            else:
+                model_path = f"{path}/{v}"
+            _models[k] = models.from_pretrained(model_path)
 
         new_pipeline = Pipeline(_models)
         new_pipeline._pretrained_args = args

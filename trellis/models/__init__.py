@@ -43,20 +43,30 @@ def from_pretrained(path: str, **kwargs):
 
     Args:
         path: The path to the checkpoint. Can be either local path or a Hugging Face model name.
-              NOTE: config file and model file should take the name f'{path}.json' and f'{path}.safetensors' respectively.
+              NOTE: local config/model files should be f'{path}.json' plus either f'{path}.safetensors' or f'{path}.pt'.
         **kwargs: Additional arguments for the model constructor.
     """
     import os
     import json
+    import torch
     from safetensors.torch import load_file
-    is_local = os.path.exists(f"{path}.json") and os.path.exists(f"{path}.safetensors")
+
+    config_path = f"{path}.json"
+    safetensors_path = f"{path}.safetensors"
+    pt_path = f"{path}.pt"
+    is_local = os.path.exists(config_path) and (os.path.exists(safetensors_path) or os.path.exists(pt_path))
 
     if is_local:
-        config_file = f"{path}.json"
-        model_file = f"{path}.safetensors"
+        config_file = config_path
+        model_file = safetensors_path if os.path.exists(safetensors_path) else pt_path
     else:
         from huggingface_hub import hf_hub_download
         path_parts = path.split('/')
+        if len(path_parts) < 3 or path_parts[0] == '' or path_parts[1] == '':
+            raise ValueError(
+                f"Invalid Hugging Face model path: '{path}'. "
+                "Expected format: '<org>/<repo>/<model_name>'."
+            )
         repo_id = f'{path_parts[0]}/{path_parts[1]}'
         model_name = '/'.join(path_parts[2:])
         config_file = hf_hub_download(repo_id, f"{model_name}.json")
@@ -65,7 +75,20 @@ def from_pretrained(path: str, **kwargs):
     with open(config_file, 'r') as f:
         config = json.load(f)
     model = __getattr__(config['name'])(**config['args'], **kwargs)
-    model.load_state_dict(load_file(model_file))
+
+    if model_file.endswith('.safetensors'):
+        state_dict = load_file(model_file)
+    else:
+        try:
+            state_dict = torch.load(model_file, map_location='cpu', weights_only=True)
+        except TypeError:
+            state_dict = torch.load(model_file, map_location='cpu')
+        if isinstance(state_dict, dict) and 'state_dict' in state_dict:
+            state_dict = state_dict['state_dict']
+        elif hasattr(state_dict, 'state_dict'):
+            state_dict = state_dict.state_dict()
+
+    model.load_state_dict(state_dict)
 
     return model 
 
